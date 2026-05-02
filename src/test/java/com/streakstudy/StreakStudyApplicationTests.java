@@ -1,10 +1,10 @@
-package com.example.dbp_project;
+package com.streakstudy.dbp_project;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DbpProjectApplicationTests {
+class StreakStudyApplicationTests {
 
     @Test
     void contextLoads() {
