@@ -1,6 +1,7 @@
 package com.streakstudy.domain.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import com.streakstudy.domain.model.User;
@@ -14,7 +15,6 @@ import com.streakstudy.domain.model.User;
  */
 public interface UserRepository {
 
-    User save(User user);
     Optional<User> findById(Long userId);
     Optional<User> findByEmail(String email);
 
@@ -22,7 +22,6 @@ public interface UserRepository {
 
     boolean existsByEmail(String email);
 
-    int consumeStreakFreezes(LocalDate thresholdDate);
-
-    int resetUnprotectedStreaks(LocalDate thresholdDate);
+    List<User> findAllInactiveSince(LocalDate thresholdDate, Long institutionId);
+    User save(User user);
 }

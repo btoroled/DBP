@@ -1,6 +1,7 @@
 package com.streakstudy.infrastructure.persistence.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,11 +20,6 @@ public interface UserJpaRepository extends JpaRepository<UserJpa, Long> {
 
     boolean existsByEmail(String email);
 
-    @Modifying
-    @Query("UPDATE UserJpa u SET u.streakFreezes = u.streakFreezes - 1 WHERE u.currentStreak > 0 AND u.streakFreezes > 0 AND (u.lastActiveDate IS NULL OR u.lastActiveDate < :threshold)")
-    int consumeStreakFreezes(@Param("threshold") LocalDate threshold);
-
-    @Modifying
-    @Query("UPDATE UserJpa u SET u.currentStreak = 0 WHERE u.currentStreak > 0 AND u.streakFreezes = 0 AND (u.lastActiveDate IS NULL OR u.lastActiveDate < :threshold)")
-    int resetUnprotectedStreaks(@Param("threshold") LocalDate threshold);
+    @Query("SELECT u FROM UserJpa u WHERE u.institutionId = :institutionId AND u.currentStreak > 0 AND (u.lastActiveDate IS NULL OR u.lastActiveDate < :threshold)")
+    List<UserJpa> findAllInactiveSince(@Param("threshold") LocalDate threshold, @Param("institutionId") Long institutionId);
 }

@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.streakstudy.domain.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,10 +13,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.streakstudy.application.service.InstitutionService.InstitutionCodeAlreadyExistsException;
-import com.streakstudy.domain.exception.EmailAlreadyExistsException;
-import com.streakstudy.domain.exception.EntityNotFoundException;
-import com.streakstudy.domain.exception.InvalidCredentialsException;
-import com.streakstudy.domain.exception.TenantViolationException;
 
 /**
  * Mapea excepciones de dominio y de framework a respuestas HTTP estandar.
@@ -62,6 +59,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> illegalArg(IllegalArgumentException ex) {
         return body(HttpStatus.BAD_REQUEST, "bad_request", ex.getMessage());
+    }
+
+    @ExceptionHandler(InsufficientXpException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientXp(InsufficientXpException ex) {
+        return body(HttpStatus.BAD_REQUEST, "insufficient_xp", ex.getMessage());
+    }
+
+    @ExceptionHandler(MaxStreakFreezesReachedException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxStreakFreezes(MaxStreakFreezesReachedException ex) {
+        return body(HttpStatus.BAD_REQUEST, "max_streak_freezes_reached", ex.getMessage());
+    }
+
+    @ExceptionHandler(BadgeAlreadyOwnedException.class)
+    public ResponseEntity<Map<String, Object>> handleBadgeAlreadyExists(BadgeAlreadyOwnedException ex) {
+        return body(HttpStatus.CONFLICT, "badge_already_owned", ex.getMessage()); // 409 es ideal para duplicados
     }
 
     // Fallback intencionalmente NO declarado para no enmascarar bugs en dev.

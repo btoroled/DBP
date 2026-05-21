@@ -11,6 +11,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserProgressService implements FinishReviewUseCase, GetUserProgressUseCase {
@@ -35,6 +37,11 @@ public class UserProgressService implements FinishReviewUseCase, GetUserProgress
     public UserProgressResponse execute(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con ID: " + userId));
-        return new UserProgressResponse(user.xp(), user.currentStreak());
+
+        Set<String> badgeNames = user.badges().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+
+        return new UserProgressResponse(user.xp(), user.currentStreak(), user.streakFreezes(), badgeNames);
     }
 }

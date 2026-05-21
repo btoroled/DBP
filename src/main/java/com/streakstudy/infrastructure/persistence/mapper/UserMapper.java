@@ -3,6 +3,9 @@ package com.streakstudy.infrastructure.persistence.mapper;
 import com.streakstudy.domain.model.User;
 import com.streakstudy.infrastructure.persistence.entity.UserJpa;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public final class UserMapper {
 
     private UserMapper() { }
@@ -19,7 +22,8 @@ public final class UserMapper {
                 jpa.getXp(),
                 jpa.getCurrentStreak(),
                 jpa.getLastActiveDate(),
-                jpa.getStreakFreezes()
+                jpa.getStreakFreezes(),
+                jpa.getBadges() != null ? Set.copyOf(jpa.getBadges()) : Set.of()
         );
     }
 
@@ -36,6 +40,7 @@ public final class UserMapper {
         jpa.setCurrentStreak(domain.currentStreak());
         jpa.setLastActiveDate(domain.lastActiveDate());
         jpa.setStreakFreezes(domain.streakFreezes());
+        jpa.setBadges(domain.badges() != null ? new HashSet<>(domain.badges()) : new HashSet<>());
         return jpa;
     }
 }

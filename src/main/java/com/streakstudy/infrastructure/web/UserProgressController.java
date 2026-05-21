@@ -7,6 +7,7 @@ import com.streakstudy.application.port.GetUserProgressUseCase;
 import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class UserProgressController {
     }
 
     @PostMapping("/review")
+    @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<Void> finishReview(
             @AuthenticationPrincipal AuthenticatedUserPrincipal principal,
             @Valid @RequestBody FinishReviewRequest request

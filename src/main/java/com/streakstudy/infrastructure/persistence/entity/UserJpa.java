@@ -2,20 +2,13 @@ package com.streakstudy.infrastructure.persistence.entity;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.streakstudy.domain.model.Badge;
 import com.streakstudy.domain.model.UserRole;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 /**
  * Entidad JPA para User. Tenant-aware (extiende {@link TenantAwareJpaEntity}).
@@ -72,6 +65,13 @@ public class UserJpa extends TenantAwareJpaEntity {
         if (createdAt == null) createdAt = Instant.now();
     }
 
+    @ElementCollection(targetClass = Badge.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_badges", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "badge_name", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Set<Badge> badges = new HashSet<>();
+
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -101,4 +101,7 @@ public class UserJpa extends TenantAwareJpaEntity {
 
     public int getStreakFreezes() { return streakFreezes; }
     public void setStreakFreezes(int streakFreezes) { this.streakFreezes = streakFreezes; }
+
+    public Set<Badge> getBadges() { return badges; }
+    public void setBadges(Set<Badge> badges) { this.badges = badges; }
 }
