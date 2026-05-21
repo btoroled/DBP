@@ -1,5 +1,6 @@
 package com.streakstudy.infrastructure.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,7 @@ public interface UserJpaRepository extends JpaRepository<UserJpa, Long> {
     Optional<UserJpa> findByIdAndInstitutionId(Long id, Long institutionId);
 
     boolean existsByEmail(String email);
+
+    // NUEVA QUERY: FILTRA POR INSTITUCIÓN Y ORDENA POR RACHA DESCENDENTE
+    List<UserJpa> findByInstitutionIdOrderByStreakDesc(Long institutionId);
 }

@@ -53,7 +53,7 @@ class AuthServiceTest {
         when(hasher.hash("Password123")).thenReturn("HASHED");
         when(users.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
-            return new User(10L, u.institutionId(), u.email(), u.passwordHash(), u.fullName(), u.role(), Instant.now());
+            return new User(10L, u.institutionId(), u.email(), u.passwordHash(), u.fullName(), u.role(), Instant.now(), 0, 0);
         });
         when(tokens.issue(any(User.class))).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
@@ -97,7 +97,7 @@ class AuthServiceTest {
 
     @Test
     void login_devuelveTokenCuandoCredencialesSonCorrectas() {
-        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now());
+        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0);
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches("Password123", "HASHED")).thenReturn(true);
         when(tokens.issue(existing)).thenReturn("jwt-token");
@@ -120,7 +120,7 @@ class AuthServiceTest {
 
     @Test
     void login_lanzaCuandoPasswordEsIncorrecta() {
-        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now());
+        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0);
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches(eq("wrong"), anyString())).thenReturn(false);
 

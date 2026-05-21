@@ -18,13 +18,21 @@ public final class User implements TenantAware {
     private final UserRole role;
     private final Instant createdAt;
 
+    // ========================================================
+    // NUEVOS CAMPOS AGREGADOS PARA TU PARTE (UI #11, #12, #15)
+    // ========================================================
+    private final Integer streak;
+    private final Integer points;
+
     public User(Long id,
                 Long institutionId,
                 String email,
                 String passwordHash,
                 String fullName,
                 UserRole role,
-                Instant createdAt) {
+                Instant createdAt,
+                Integer streak,
+                Integer points) {
         this.id = id;
         this.institutionId = Objects.requireNonNull(institutionId, "institutionId");
         this.email = Objects.requireNonNull(email, "email").toLowerCase();
@@ -32,10 +40,17 @@ public final class User implements TenantAware {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
         this.role = Objects.requireNonNull(role, "role");
         this.createdAt = createdAt;
+        this.streak = streak != null ? streak : 0;
+        this.points = points != null ? points : 0;
     }
 
     public static User newStudent(Long institutionId, String email, String passwordHash, String fullName) {
-        return new User(null, institutionId, email, passwordHash, fullName, UserRole.STUDENT, null);
+        return new User(null, institutionId, email, passwordHash, fullName, UserRole.STUDENT, null, 0, 0);
+    }
+
+    // Métodos para actualizar los puntos creando una nueva instancia (Inmutabilidad)
+    public User withStreakAndPoints(Integer newStreak, Integer newPoints) {
+        return new User(this.id, this.institutionId, this.email, this.passwordHash, this.fullName, this.role, this.createdAt, newStreak, newPoints);
     }
 
     public Long id() { return id; }
@@ -45,6 +60,10 @@ public final class User implements TenantAware {
     public String fullName() { return fullName; }
     public UserRole role() { return role; }
     public Instant createdAt() { return createdAt; }
+
+    // NUEVOS MÉTODOS DE ACCESO ESTILO TU GRUPO (SIn "GET")
+    public Integer streak() { return streak; }
+    public Integer points() { return points; }
 
     @Override
     public boolean equals(Object o) {

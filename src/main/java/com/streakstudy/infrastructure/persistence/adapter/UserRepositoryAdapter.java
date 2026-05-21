@@ -1,6 +1,8 @@
 package com.streakstudy.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -22,9 +24,6 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public User save(User user) {
-        // El registro y la actualizacion por administrador son cross-tenant a nivel
-        // de adapter: el institutionId viaja en la propia entidad y el listener
-        // lo valida (en cross-tenant=false) o lo respeta (en cross-tenant=true).
         return TenantContext.runCrossTenant(() -> {
             UserJpa saved = jpa.save(UserMapper.toJpa(user));
             return UserMapper.toDomain(saved);
@@ -33,9 +32,8 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        // Lookup cross-tenant intencional para login.
         return TenantContext.runCrossTenant(
-            () -> jpa.findByEmail(email).map(UserMapper::toDomain));
+                () -> jpa.findByEmail(email).map(UserMapper::toDomain));
     }
 
     @Override
@@ -45,6 +43,15 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public boolean existsByEmail(String email) {
-        return TenantContext.runCrossTenant(() -> jpa.existsByEmail(email));
+        return jpa.existsByEmail(email);
+    }
+
+    // IMPLEMENTACIÓN DEL NUEVO MÉTODO DEL PUERTO
+    @Override
+    public List<User> findLeaderboardByInstitutionId(Long institutionId) {
+        return jpa.findByInstitutionIdOrderByStreakDesc(institutionId)
+                .stream()
+                .map(UserMapper::toDomain)
+                .collect(Collectors.toList());
     }
 }

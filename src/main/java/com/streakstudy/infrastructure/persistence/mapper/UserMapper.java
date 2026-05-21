@@ -9,13 +9,15 @@ public final class UserMapper {
 
     public static User toDomain(UserJpa jpa) {
         return new User(
-            jpa.getId(),
-            jpa.getInstitutionId(),
-            jpa.getEmail(),
-            jpa.getPasswordHash(),
-            jpa.getFullName(),
-            jpa.getRole(),
-            jpa.getCreatedAt()
+                jpa.getId(),
+                jpa.getInstitutionId(),
+                jpa.getEmail(),
+                jpa.getPasswordHash(),
+                jpa.getFullName(),
+                jpa.getRole(),
+                jpa.getCreatedAt(),
+                jpa.getStreak(),  // <-- NUEVO: Pasa la racha al dominio
+                jpa.getPoints()   // <-- NUEVO: Pasa los puntos al dominio
         );
     }
 
@@ -28,6 +30,8 @@ public final class UserMapper {
         jpa.setFullName(domain.fullName());
         jpa.setRole(domain.role());
         jpa.setCreatedAt(domain.createdAt());
+        jpa.setStreak(domain.streak());   // <-- NUEVO: Guarda la racha en la BD
+        jpa.setPoints(domain.points());   // <-- NUEVO: Guarda los puntos en la BD
         return jpa;
     }
 }

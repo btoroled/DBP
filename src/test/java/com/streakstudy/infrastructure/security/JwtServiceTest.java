@@ -30,7 +30,7 @@ class JwtServiceTest {
 
     @Test
     void issue_yParse_devuelvenLosMismosClaims() {
-        User user = new User(10L, 7L, "alice@x.com", "HASH", "Alice", UserRole.STUDENT, Instant.now());
+        User user = new User(1L, 1L, "alice@ute.com", "HASHED", "fullName", UserRole.STUDENT, Instant.now(), 0, 0);
 
         String token = service.issue(user);
         JwtService.ParsedToken parsed = service.parse(token);
@@ -50,7 +50,7 @@ class JwtServiceTest {
         JwtService otroService = new JwtService(otraProps);
 
         String tokenForaneo = otroService.issue(
-            new User(1L, 1L, "x@x.com", "h", "X", UserRole.STUDENT, Instant.now()));
+            new User(1L, 1L, "x@x.com", "h", "X", UserRole.STUDENT, Instant.now(), 0, 0));
 
         assertThatThrownBy(() -> service.parse(tokenForaneo))
             .isInstanceOf(JwtException.class);
