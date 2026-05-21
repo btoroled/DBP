@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 
 import com.streakstudy.domain.model.User;
@@ -103,6 +104,28 @@ public class UserRepositoryAdapter implements UserRepository {
     public Optional<User> findById(Long id) {
         return jpa.findById(id)
                 .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findTopStudentsByXp(Long institutionId, int topN) {
+        List<UserJpa> entities = jpa.findTopUsersByXp(institutionId, Limit.of(topN));
+
+        return new java.util.ArrayList<>(entities.stream()
+                .map(entity -> new User(
+                        entity.getId(),
+                        entity.getInstitutionId(),
+                        entity.getEmail(),
+                        entity.getPasswordHash(),
+                        entity.getFullName(),
+                        entity.getRole(),
+                        entity.getCreatedAt(),
+                        entity.getXp(),
+                        entity.getCurrentStreak(),
+                        entity.getLastActiveDate(),
+                        entity.getStreakFreezes(),
+                        entity.getBadges()
+                ))
+                .toList());
     }
 
 }

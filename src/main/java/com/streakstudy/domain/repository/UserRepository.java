@@ -23,5 +23,7 @@ public interface UserRepository {
     boolean existsByEmail(String email);
 
     List<User> findAllInactiveSince(LocalDate thresholdDate, Long institutionId);
+
+    List<User> findTopStudentsByXp(Long institutionId, int topN);
     User save(User user);
 }
