@@ -15,7 +15,11 @@ public final class UserMapper {
             jpa.getPasswordHash(),
             jpa.getFullName(),
             jpa.getRole(),
-            jpa.getCreatedAt()
+            jpa.getCreatedAt(),
+                jpa.getXp(),
+                jpa.getCurrentStreak(),
+                jpa.getLastActiveDate(),
+                jpa.getStreakFreezes()
         );
     }
 
@@ -28,6 +32,10 @@ public final class UserMapper {
         jpa.setFullName(domain.fullName());
         jpa.setRole(domain.role());
         jpa.setCreatedAt(domain.createdAt());
+        jpa.setXp(domain.xp());
+        jpa.setCurrentStreak(domain.currentStreak());
+        jpa.setLastActiveDate(domain.lastActiveDate());
+        jpa.setStreakFreezes(domain.streakFreezes());
         return jpa;
     }
 }

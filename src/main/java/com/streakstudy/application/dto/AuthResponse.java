@@ -9,9 +9,10 @@ public record AuthResponse(
     Long userId,
     Long institutionId,
     String email,
-    UserRole role
+    UserRole role,
+    int xp
 ) {
     public static AuthResponse of(String token, long expiresIn, User u) {
-        return new AuthResponse(token, expiresIn, u.id(), u.institutionId(), u.email(), u.role());
+        return new AuthResponse(token, expiresIn, u.id(), u.institutionId(), u.email(), u.role(), u.xp());
     }
 }

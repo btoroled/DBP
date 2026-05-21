@@ -1,5 +1,6 @@
 package com.streakstudy.infrastructure.persistence.adapter;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -46,5 +47,21 @@ public class UserRepositoryAdapter implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return TenantContext.runCrossTenant(() -> jpa.existsByEmail(email));
+    }
+
+    @Override
+    public Optional<User> findById(Long id) {
+        return jpa.findById(id)
+                .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public int consumeStreakFreezes(LocalDate thresholdDate) {
+        return jpa.consumeStreakFreezes(thresholdDate);
+    }
+
+    @Override
+    public int resetUnprotectedStreaks(LocalDate thresholdDate) {
+        return jpa.resetUnprotectedStreaks(thresholdDate);
     }
 }
