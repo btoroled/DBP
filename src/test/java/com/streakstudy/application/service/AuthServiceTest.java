@@ -48,7 +48,7 @@ class AuthServiceTest {
     private final Institution inst = new Institution(1L, "UTEC", "utec", true, Instant.now());
 
     @Test
-    void register_creaUsuarioConInstitutionIdYDevuelveToken() {
+    void shouldCreateUserWithInstitutionIdAndReturnTokenWhenRegistering() {
         RegisterRequest req = new RegisterRequest(1L, "Alice@utec.edu", "Password123", "Alice");
         when(institutions.findById(1L)).thenReturn(Optional.of(inst));
         when(users.existsByEmail("alice@utec.edu")).thenReturn(false);
@@ -77,7 +77,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_lanzaSiInstitutionNoExiste() {
+    void shouldThrowWhenInstitutionDoesNotExistDuringRegister() {
         when(institutions.findById(99L)).thenReturn(Optional.empty());
         RegisterRequest req = new RegisterRequest(99L, "a@b.com", "Password123", "A");
 
@@ -88,7 +88,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_lanzaSiEmailYaExiste() {
+    void shouldThrowWhenEmailAlreadyExistsDuringRegister() {
         when(institutions.findById(1L)).thenReturn(Optional.of(inst));
         when(users.existsByEmail("a@b.com")).thenReturn(true);
 
@@ -98,7 +98,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_devuelveTokenCuandoCredencialesSonCorrectas() {
+    void shouldReturnTokenWhenLoginCredentialsAreCorrect() {
         User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 100, 3, LocalDate.now(), 1, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches("Password123", "HASHED")).thenReturn(true);
@@ -113,7 +113,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_lanzaCuandoEmailNoExiste() {
+    void shouldThrowWhenLoginEmailDoesNotExist() {
         when(users.findByEmail("ghost@x.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.login(new LoginRequest("ghost@x.com", "x")))
@@ -121,7 +121,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_lanzaCuandoPasswordEsIncorrecta() {
+    void shouldThrowWhenLoginPasswordIsIncorrect() {
         User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0, LocalDate.now(), 0, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches(eq("wrong"), anyString())).thenReturn(false);

@@ -36,7 +36,7 @@ class HealthControllerTest {
     }
 
     @Test
-    void health_devuelveStatusUpYNombreDeAplicacion() throws Exception {
+    void shouldReturnUpStatusAndApplicationNameWhenCheckingHealth() throws Exception {
         mockMvc.perform(get("/api/health"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("UP"))
@@ -47,7 +47,7 @@ class HealthControllerTest {
     }
 
     @Test
-    void health_usaElNombreInyectadoEnElConstructor() throws Exception {
+    void shouldUseInjectedApplicationNameWhenCheckingHealth() throws Exception {
         HealthController otroController = new HealthController("nombre-custom");
         MockMvc otroMockMvc = MockMvcBuilders.standaloneSetup(otroController).build();
 

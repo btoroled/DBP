@@ -36,7 +36,7 @@ class LeaderboardServiceTest {
     }
 
     @Test
-    void getLeaderboard_usaTenantContextYMapeaElResultado() {
+    void shouldUseTenantContextAndMapResultWhenGettingLeaderboard() {
         TenantContext.set(7L);
         when(userRepository.findTopStudentsByXp(7L, 10)).thenReturn(List.of(
             new User(1L, 7L, "a@test.com", "HASH", "Alice", UserRole.STUDENT,
@@ -55,7 +55,7 @@ class LeaderboardServiceTest {
     }
 
     @Test
-    void getLeaderboard_sinTenantContext_lanzaExcepcion() {
+    void shouldThrowWhenGettingLeaderboardWithoutTenantContext() {
         assertThatThrownBy(() -> service.getLeaderboard())
             .isInstanceOf(TenantViolationException.class)
             .hasMessageContaining("No hay un institutionId");

@@ -1,16 +1,13 @@
 package com.streakstudy.infrastructure.web;
 
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,64 +18,52 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.streakstudy.application.dto.CourseResponse;
-import com.streakstudy.application.dto.CreateCourseRequest;
-import com.streakstudy.application.service.CourseService;
+import com.streakstudy.application.dto.InstitutionRequest;
+import com.streakstudy.application.dto.InstitutionResponse;
+import com.streakstudy.application.service.InstitutionService;
 import com.streakstudy.infrastructure.security.JwtAuthenticationFilter;
 import com.streakstudy.infrastructure.web.advice.GlobalExceptionHandler;
 
-@WebMvcTest(CourseController.class)
+@WebMvcTest(InstitutionController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
-class CourseControllerTest {
+class InstitutionControllerTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
-    @MockitoBean CourseService courseService;
+    @MockitoBean InstitutionService institutionService;
     @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    void shouldReturn201AndCreatedCourseWhenCreating() throws Exception {
-        CreateCourseRequest request = new CreateCourseRequest("Calculo", "desc");
-        CourseResponse response = new CourseResponse(1L, 7L, "Calculo", "desc", Instant.now());
-        when(courseService.create(request)).thenReturn(response);
+    void shouldCreateInstitutionWhenBodyIsValid() throws Exception {
+        InstitutionRequest request = new InstitutionRequest("UTEC", "utec");
+        InstitutionResponse response = new InstitutionResponse(1L, "UTEC", "utec", true, Instant.now());
+        when(institutionService.create(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/courses")
+        mockMvc.perform(post("/api/institutions")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(1L))
-            .andExpect(jsonPath("$.institutionId").value(7L))
-            .andExpect(jsonPath("$.name").value("Calculo"));
+            .andExpect(jsonPath("$.code").value("utec"));
     }
 
     @Test
-    void shouldReturn200AndListWhenListingCourses() throws Exception {
-        when(courseService.listForCurrentTenant()).thenReturn(List.of(
-            new CourseResponse(1L, 7L, "Calculo", "desc", Instant.now()),
-            new CourseResponse(2L, 7L, "Algebra", "desc", Instant.now())
-        ));
+    void shouldReturnInstitutionWhenIdExists() throws Exception {
+        InstitutionResponse response = new InstitutionResponse(2L, "PUCP", "pucp", true, Instant.now());
+        when(institutionService.getById(2L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/courses"))
+        mockMvc.perform(get("/api/institutions/2"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].name").value("Calculo"))
-            .andExpect(jsonPath("$[1].name").value("Algebra"));
+            .andExpect(jsonPath("$.name").value("PUCP"));
     }
 
     @Test
-    void shouldReturn204WhenDeletingCourse() throws Exception {
-        doNothing().when(courseService).deleteByIdForCurrentTenant(5L);
+    void shouldReturnBadRequestWhenCreateBodyIsInvalid() throws Exception {
+        InstitutionRequest request = new InstitutionRequest("", "");
 
-        mockMvc.perform(delete("/api/courses/5"))
-            .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void shouldReturn400WhenCreateBodyIsInvalid() throws Exception {
-        CreateCourseRequest request = new CreateCourseRequest("", "x".repeat(2100));
-
-        mockMvc.perform(post("/api/courses")
+        mockMvc.perform(post("/api/institutions")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())

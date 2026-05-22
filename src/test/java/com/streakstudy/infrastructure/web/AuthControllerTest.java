@@ -37,7 +37,7 @@ class AuthControllerTest {
     @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    void register_devuelve201YElBodyEsperado() throws Exception {
+    void shouldReturn201AndExpectedBodyWhenRegistering() throws Exception {
         RegisterRequest request = new RegisterRequest(1L, "alice@test.com", "Password123", "Alice");
         AuthResponse response = new AuthResponse("jwt-token", 3600L, 10L, 1L, "alice@test.com", UserRole.STUDENT, 0);
         when(authService.register(request)).thenReturn(response);
@@ -52,7 +52,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_devuelve200YElBodyEsperado() throws Exception {
+    void shouldReturn200AndExpectedBodyWhenLoggingIn() throws Exception {
         LoginRequest request = new LoginRequest("alice@test.com", "Password123");
         AuthResponse response = new AuthResponse("jwt-token", 3600L, 10L, 1L, "alice@test.com", UserRole.STUDENT, 7);
         when(authService.login(request)).thenReturn(response);
@@ -66,7 +66,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_conBodyInvalido_devuelve400() throws Exception {
+    void shouldReturn400WhenRegisterBodyIsInvalid() throws Exception {
         RegisterRequest request = new RegisterRequest(null, "correo-invalido", "123", "");
 
         mockMvc.perform(post("/api/auth/register")

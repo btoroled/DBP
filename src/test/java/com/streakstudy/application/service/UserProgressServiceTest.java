@@ -33,7 +33,7 @@ class UserProgressServiceTest {
     @InjectMocks UserProgressService service;
 
     @Test
-    void execute_sumaXpSegunTarjetasYTiempoEIncrementaRacha() {
+    void shouldAddXpAndIncreaseStreakWhenFinishingReview() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 10, 2, LocalDate.now().minusDays(1), 1, Set.of());
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
@@ -48,7 +48,7 @@ class UserProgressServiceTest {
     }
 
     @Test
-    void execute_lanzaCuandoElUsuarioNoExiste() {
+    void shouldThrowWhenFinishingReviewForMissingUser() {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.execute(99L, new FinishReviewRequest(5, 10)))
@@ -57,7 +57,7 @@ class UserProgressServiceTest {
     }
 
     @Test
-    void execute_obtenerProgreso_mapeaCamposYBadges() {
+    void shouldMapFieldsAndBadgesWhenGettingUserProgress() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 15, 4, LocalDate.now(), 2, Set.of(Badge.STREAK_STARTER));
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));

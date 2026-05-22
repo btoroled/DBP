@@ -35,7 +35,7 @@ class StoreServiceTest {
     @InjectMocks StoreService service;
 
     @Test
-    void buyStreakFreeze_descuentaXpYAumentaFreeze() {
+    void shouldDiscountXpAndIncreaseFreezeWhenBuyingStreakFreeze() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 10, 3, LocalDate.now(), 0, Set.of());
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
@@ -50,7 +50,7 @@ class StoreServiceTest {
     }
 
     @Test
-    void buyBadge_guardaUsuarioActualizadoConLaInsignia() {
+    void shouldSaveUpdatedUserWithBadgeWhenBuyingBadge() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 20, 2, LocalDate.now(), 0, Set.of());
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
@@ -65,7 +65,7 @@ class StoreServiceTest {
     }
 
     @Test
-    void buyBadge_lanzaCuandoElUsuarioNoExiste() {
+    void shouldThrowWhenBuyingBadgeForMissingUser() {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.buyBadge(99L, Badge.STREAK_STARTER))
@@ -76,7 +76,7 @@ class StoreServiceTest {
     }
 
     @Test
-    void buyBadge_lanzaCuandoNoHayXpSuficiente() {
+    void shouldThrowWhenBuyingBadgeWithoutEnoughXp() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 3, 1, LocalDate.now(), 0, Set.of());
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
@@ -88,7 +88,7 @@ class StoreServiceTest {
     }
 
     @Test
-    void buyBadge_lanzaCuandoLaInsigniaYaFueComprada() {
+    void shouldThrowWhenBuyingBadgeAlreadyOwned() {
         User user = new User(10L, 1L, "alice@test.com", "HASH", "Alice", UserRole.STUDENT,
             Instant.now(), 20, 1, LocalDate.now(), 0, Set.of(Badge.STREAK_STARTER));
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));

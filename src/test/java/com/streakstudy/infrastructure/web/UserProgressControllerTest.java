@@ -61,7 +61,7 @@ class UserProgressControllerTest {
     }
 
     @Test
-    void finishReview_conBodyValido_devuelve200() throws Exception {
+    void shouldReturn200WhenFinishReviewBodyIsValid() throws Exception {
         FinishReviewRequest request = new FinishReviewRequest(12, 20);
         doNothing().when(finishReviewUseCase).execute(10L, request);
 
@@ -74,7 +74,7 @@ class UserProgressControllerTest {
     }
 
     @Test
-    void finishReview_conBodyInvalido_devuelve400() throws Exception {
+    void shouldReturn400WhenFinishReviewBodyIsInvalid() throws Exception {
         FinishReviewRequest request = new FinishReviewRequest(0, -1);
 
         mockMvc.perform(post("/api/users/me/progress/review")
@@ -85,7 +85,7 @@ class UserProgressControllerTest {
     }
 
     @Test
-    void getMyProgress_devuelve200YElBodyEsperado() throws Exception {
+    void shouldReturn200AndExpectedBodyWhenGettingMyProgress() throws Exception {
         when(getUserProgressUseCase.execute(10L))
             .thenReturn(new UserProgressResponse(14, 3, 1, Set.of("STREAK_STARTER")));
 

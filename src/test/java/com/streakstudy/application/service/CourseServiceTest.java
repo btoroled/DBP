@@ -40,7 +40,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void create_usaInstitutionIdDelTenantContext() {
+    void shouldUseInstitutionIdFromTenantContextWhenCreatingCourse() {
         TenantContext.set(42L);
         when(repo.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
@@ -57,7 +57,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void create_sinTenantContext_lanzaTenantViolation() {
+    void shouldThrowTenantViolationWhenCreatingCourseWithoutTenantContext() {
         // No setTenant -> requireInstitutionId debe explotar
         assertThatThrownBy(() -> service.create(new CreateCourseRequest("X", "")))
             .isInstanceOf(TenantViolationException.class)
@@ -66,7 +66,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void listForCurrentTenant_filtraPorTenant() {
+    void shouldFilterCoursesByTenantWhenListingCurrentTenant() {
         TenantContext.set(7L);
         when(repo.findAllByInstitutionId(7L)).thenReturn(List.of(
             new Course(1L, 7L, "A", "", Instant.now()),
@@ -83,7 +83,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void getByIdForCurrentTenant_lanza404CuandoNoEncuentraEnTenant() {
+    void shouldThrowNotFoundWhenCourseIsMissingInCurrentTenant() {
         TenantContext.set(7L);
         when(repo.findByIdAndInstitutionId(99L, 7L)).thenReturn(Optional.empty());
 
@@ -94,7 +94,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void getByIdForCurrentTenant_devuelveSoloDelTenantActual() {
+    void shouldReturnCourseFromCurrentTenantWhenIdExists() {
         TenantContext.set(7L);
         Course owned = new Course(5L, 7L, "Curso", "", Instant.now());
         when(repo.findByIdAndInstitutionId(5L, 7L)).thenReturn(Optional.of(owned));
@@ -106,7 +106,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void delete_invocaRepoSoloConTenantActual() {
+    void shouldDeleteCourseOnlyWithinCurrentTenant() {
         TenantContext.set(7L);
         when(repo.findByIdAndInstitutionId(5L, 7L)).thenReturn(
             Optional.of(new Course(5L, 7L, "X", "", Instant.now())));
