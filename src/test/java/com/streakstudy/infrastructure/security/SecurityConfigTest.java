@@ -1,6 +1,7 @@
 package com.streakstudy.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +20,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
 
-    private final SecurityConfig config = new SecurityConfig();
+    private final JwtAuthenticationFilter jwtFilter = mock(JwtAuthenticationFilter.class);
+
+    private final SecurityConfig config = new SecurityConfig(jwtFilter);
 
     @Test
     void passwordEncoder_codificaYValidaContrasenasCorrectamente() {
