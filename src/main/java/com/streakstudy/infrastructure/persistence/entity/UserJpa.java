@@ -1,20 +1,14 @@
 package com.streakstudy.infrastructure.persistence.entity;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.streakstudy.domain.model.Badge;
 import com.streakstudy.domain.model.UserRole;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 /**
  * Entidad JPA para User. Tenant-aware (extiende {@link TenantAwareJpaEntity}).
@@ -51,6 +45,18 @@ public class UserJpa extends TenantAwareJpaEntity {
     @Column(nullable = false, length = 32)
     private UserRole role;
 
+    @Column(nullable = false)
+    private int xp = 0;
+
+    @Column(name = "current_streak", nullable = false)
+    private int currentStreak = 0;
+
+    @Column(name = "last_active_date")
+    private LocalDate lastActiveDate;
+
+    @Column(name = "streak_freezes", nullable = false)
+    private int streakFreezes = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -70,6 +76,13 @@ public class UserJpa extends TenantAwareJpaEntity {
         if (points == null) points = 0;
     }
 
+    @ElementCollection(targetClass = Badge.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_badges", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "badge_name", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Set<Badge> badges = new HashSet<>();
+
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -88,10 +101,18 @@ public class UserJpa extends TenantAwareJpaEntity {
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    // GETTERS Y SETTERS DE LOS NUEVOS CAMPOS
-    public Integer getStreak() { return streak; }
-    public void setStreak(Integer streak) { this.streak = streak; }
+    public int getXp() { return xp; }
+    public void setXp(int xp) { this.xp = xp; }
 
-    public Integer getPoints() { return points; }
-    public void setPoints(Integer points) { this.points = points; }
+    public int getCurrentStreak() { return currentStreak; }
+    public void setCurrentStreak(int currentStreak) { this.currentStreak = currentStreak; }
+
+    public LocalDate getLastActiveDate() { return lastActiveDate; }
+    public void setLastActiveDate(LocalDate lastActiveDate) { this.lastActiveDate = lastActiveDate; }
+
+    public int getStreakFreezes() { return streakFreezes; }
+    public void setStreakFreezes(int streakFreezes) { this.streakFreezes = streakFreezes; }
+
+    public Set<Badge> getBadges() { return badges; }
+    public void setBadges(Set<Badge> badges) { this.badges = badges; }
 }

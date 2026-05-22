@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,7 @@ class JwtServiceTest {
 
     @Test
     void issue_yParse_devuelvenLosMismosClaims() {
-        User user = new User(1L, 1L, "alice@ute.com", "HASHED", "fullName", UserRole.STUDENT, Instant.now(), 0, 0);
+        User user = new User(10L, 7L, "alice@x.com", "HASH", "Alice", UserRole.STUDENT, Instant.now(), 0, 0, LocalDate.now(), 0, Set.of());
 
         String token = service.issue(user);
         JwtService.ParsedToken parsed = service.parse(token);
@@ -50,7 +52,7 @@ class JwtServiceTest {
         JwtService otroService = new JwtService(otraProps);
 
         String tokenForaneo = otroService.issue(
-            new User(1L, 1L, "x@x.com", "h", "X", UserRole.STUDENT, Instant.now(), 0, 0));
+            new User(1L, 1L, "x@x.com", "h", "X", UserRole.STUDENT, Instant.now(), 0,0,LocalDate.now(), 0, Set.of()));
 
         assertThatThrownBy(() -> service.parse(tokenForaneo))
             .isInstanceOf(JwtException.class);

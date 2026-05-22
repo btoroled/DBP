@@ -1,6 +1,7 @@
 package com.streakstudy.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,9 @@ class SecurityConfigTest {
     @Mock
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    private final SecurityConfig config = new SecurityConfig(jwtAuthenticationFilter);
+    private final JwtAuthenticationFilter jwtFilter = mock(JwtAuthenticationFilter.class);
+
+    private final SecurityConfig config = new SecurityConfig(jwtFilter);
 
     @Test
     void passwordEncoder_codificaYValidaContrasenasCorrectamente() {

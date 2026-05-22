@@ -57,15 +57,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var auth = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + parsed.role().name()))
+                    List.of(new SimpleGrantedAuthority(parsed.role().name()))
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
                 TenantContext.set(parsed.institutionId());
                 tenantSet = true;
             } catch (JwtException | IllegalArgumentException ex) {
-                // Token invalido => seguimos sin auth. Spring Security devolvera 401
-                // si la ruta requiere autenticacion.
+                System.out.println(" [ERROR JWT FILTER]: Falló la autenticación. Motivo: " + ex.getMessage());
+                ex.printStackTrace();
                 SecurityContextHolder.clearContext();
             }
         }
@@ -76,7 +76,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (tenantSet) {
                 TenantContext.clear();
             }
-            SecurityContextHolder.clearContext();
         }
     }
 }

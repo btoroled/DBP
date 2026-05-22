@@ -10,7 +10,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +55,7 @@ class AuthServiceTest {
         when(hasher.hash("Password123")).thenReturn("HASHED");
         when(users.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
-            return new User(10L, u.institutionId(), u.email(), u.passwordHash(), u.fullName(), u.role(), Instant.now(), 0, 0);
+            return new User(10L, u.institutionId(), u.email(), u.passwordHash(), u.fullName(), u.role(), u.createdAt(), 0,0,null,0, Set.of());
         });
         when(tokens.issue(any(User.class))).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
@@ -97,7 +99,7 @@ class AuthServiceTest {
 
     @Test
     void login_devuelveTokenCuandoCredencialesSonCorrectas() {
-        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0);
+        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 100, 3, LocalDate.now(), 1, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches("Password123", "HASHED")).thenReturn(true);
         when(tokens.issue(existing)).thenReturn("jwt-token");
@@ -120,7 +122,7 @@ class AuthServiceTest {
 
     @Test
     void login_lanzaCuandoPasswordEsIncorrecta() {
-        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0);
+        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0, LocalDate.now(), 0, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches(eq("wrong"), anyString())).thenReturn(false);
 

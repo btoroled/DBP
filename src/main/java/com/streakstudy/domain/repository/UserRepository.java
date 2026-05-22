@@ -1,5 +1,6 @@
 package com.streakstudy.domain.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,14 +15,15 @@ import com.streakstudy.domain.model.User;
  */
 public interface UserRepository {
 
-    User save(User user);
-
+    Optional<User> findById(Long userId);
     Optional<User> findByEmail(String email);
 
     Optional<User> findByIdAndInstitutionId(Long id, Long institutionId);
 
     boolean existsByEmail(String email);
 
-    // NUEVO MÉTODO PARA EL RANKING FILTRADO POR INSTITUCIÓN
-    List<User> findLeaderboardByInstitutionId(Long institutionId);
+    List<User> findAllInactiveSince(LocalDate thresholdDate, Long institutionId);
+
+    List<User> findTopStudentsByXp(Long institutionId, int topN);
+    User save(User user);
 }
