@@ -3,6 +3,7 @@ package com.streakstudy.infrastructure.web;
 import com.streakstudy.application.dto.BadgePurchaseRequest;
 import com.streakstudy.application.service.StoreService;
 import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,7 +30,7 @@ public class StoreController {
     @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<Void> buyBadge(
             @AuthenticationPrincipal AuthenticatedUserPrincipal principal,
-            @RequestBody BadgePurchaseRequest request) {
+            @Valid @RequestBody BadgePurchaseRequest request) {
 
         storeService.buyBadge(principal.userId(), request.badgeName());
         return ResponseEntity.ok().build();
