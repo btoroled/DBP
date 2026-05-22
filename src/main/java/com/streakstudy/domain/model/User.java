@@ -31,6 +31,12 @@ public final class User implements TenantAware {
     private final int streakFreezes;
     private final Set<Badge> badges;
 
+    // ========================================================
+    // NUEVOS CAMPOS AGREGADOS PARA TU PARTE (UI #11, #12, #15)
+    // ========================================================
+    private final Integer streak;
+    private final Integer points;
+
     public User(Long id,
                 Long institutionId,
                 String email,
@@ -188,6 +194,10 @@ public final class User implements TenantAware {
                 this.badges
         );
     }
+
+    // NUEVOS MÉTODOS DE ACCESO ESTILO TU GRUPO (SIn "GET")
+    public Integer streak() { return streak; }
+    public Integer points() { return points; }
 
     @Override
     public boolean equals(Object o) {

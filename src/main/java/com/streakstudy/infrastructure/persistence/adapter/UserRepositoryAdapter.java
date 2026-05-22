@@ -3,6 +3,7 @@ package com.streakstudy.infrastructure.persistence.adapter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
@@ -85,9 +86,8 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        // Lookup cross-tenant intencional para login.
         return TenantContext.runCrossTenant(
-            () -> jpa.findByEmail(email).map(UserMapper::toDomain));
+                () -> jpa.findByEmail(email).map(UserMapper::toDomain));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public boolean existsByEmail(String email) {
-        return TenantContext.runCrossTenant(() -> jpa.existsByEmail(email));
+        return jpa.existsByEmail(email);
     }
 
     @Override

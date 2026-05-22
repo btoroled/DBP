@@ -19,12 +19,12 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(
-    name = "users",
-    uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
-    indexes = {
-        @Index(name = "ix_users_institution", columnList = "institution_id"),
-        @Index(name = "ix_users_email", columnList = "email")
-    }
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
+        indexes = {
+                @Index(name = "ix_users_institution", columnList = "institution_id"),
+                @Index(name = "ix_users_email", columnList = "email")
+        }
 )
 public class UserJpa extends TenantAwareJpaEntity {
 
@@ -60,9 +60,20 @@ public class UserJpa extends TenantAwareJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    // ========================================================
+    // NUEVOS CAMPOS AGREGADOS PARA TU PARTE (UI #11, #12, #15)
+    // ========================================================
+    @Column(name = "streak", nullable = false)
+    private Integer streak = 0;
+
+    @Column(name = "points", nullable = false)
+    private Integer points = 0;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) createdAt = Instant.now();
+        if (streak == null) streak = 0;
+        if (points == null) points = 0;
     }
 
     @ElementCollection(targetClass = Badge.class, fetch = FetchType.LAZY)

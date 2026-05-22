@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -19,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 @ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
+    @Mock
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     private final JwtAuthenticationFilter jwtFilter = mock(JwtAuthenticationFilter.class);
 
