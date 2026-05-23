@@ -88,7 +88,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("Con TenantContext=A, listar cursos devuelve solo los de A")
-    void listFiltraPorTenantA() {
+    void shouldListOnlyTenantACoursesWhenTenantContextIsA() {
         seedTwoInstitutionsWithCourses();
 
         TenantContext.set(instAId);
@@ -102,7 +102,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("Con TenantContext=B, listar cursos devuelve solo los de B")
-    void listFiltraPorTenantB() {
+    void shouldListOnlyTenantBCoursesWhenTenantContextIsB() {
         seedTwoInstitutionsWithCourses();
 
         TenantContext.set(instBId);
@@ -114,7 +114,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("findById de curso de B con TenantContext=A devuelve empty (no fuga)")
-    void findByIdNoEscapaEntreTenants() {
+    void shouldReturnEmptyWhenFindingCourseFromOtherTenant() {
         seedTwoInstitutionsWithCourses();
 
         Long cursoDeBId = TenantContext.runCrossTenant(() ->
@@ -131,7 +131,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("Persistir entidad con institution_id de B desde contexto=A lanza TenantViolationException")
-    void listenerBloqueaEscrituraConTenantIncorrecto() {
+    void shouldBlockWriteWhenEntityTenantDoesNotMatchContext() {
         seedTwoInstitutionsWithCourses();
 
         TenantContext.set(instAId);
@@ -151,7 +151,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("Persistir sin institution_id pero con TenantContext=A asigna A automaticamente")
-    void listenerAsignaTenantCuandoFalta() {
+    void shouldAssignTenantWhenInstitutionIdIsMissingOnPersist() {
         seedTwoInstitutionsWithCourses();
 
         TenantContext.set(instAId);
@@ -167,7 +167,7 @@ class MultiTenancyIsolationTest {
 
     @Test
     @DisplayName("countByInstitutionId no cuenta cursos del otro tenant")
-    void countByTenantNoMezcla() {
+    void shouldCountCoursesWithoutMixingTenants() {
         seedTwoInstitutionsWithCourses();
 
         TenantContext.set(instAId);

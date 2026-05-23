@@ -1,3 +1,6 @@
 package com.streakstudy.application.dto;
-
-public record BadgePurchaseRequest(String badgeName) {}
+import com.streakstudy.domain.model.Badge;
+import jakarta.validation.constraints.NotNull;
+public record BadgePurchaseRequest(
+        @NotNull Badge badgeName
+) {}
