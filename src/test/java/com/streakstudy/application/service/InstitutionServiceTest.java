@@ -32,7 +32,7 @@ class InstitutionServiceTest {
     @InjectMocks InstitutionService service;
 
     @Test
-    void create_persisteYDevuelveResponse() {
+    void shouldPersistInstitutionAndReturnResponseWhenCreating() {
         InstitutionRequest req = new InstitutionRequest("UTEC", "UTEC");
         when(institutions.existsByCode("utec")).thenReturn(false);
         when(institutions.save(any(Institution.class))).thenAnswer(inv -> {
@@ -53,7 +53,7 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void create_lanzaSiElCodeYaExiste() {
+    void shouldThrowWhenInstitutionCodeAlreadyExistsDuringCreate() {
         when(institutions.existsByCode("utec")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(new InstitutionRequest("UTEC", "utec")))
@@ -63,7 +63,7 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void getById_lanzaCuandoNoExiste() {
+    void shouldThrowWhenInstitutionDoesNotExistById() {
         when(institutions.findById(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getById(404L))
@@ -73,7 +73,7 @@ class InstitutionServiceTest {
     }
 
     @Test
-    void getById_devuelveResponseCuandoExiste() {
+    void shouldReturnResponseWhenInstitutionExistsById() {
         Institution domain = new Institution(7L, "PUCP", "pucp", true, Instant.now());
         when(institutions.findById(7L)).thenReturn(Optional.of(domain));
 
