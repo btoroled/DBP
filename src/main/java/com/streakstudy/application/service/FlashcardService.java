@@ -2,7 +2,9 @@ package com.streakstudy.application.service;
 
 import java.util.List;
 
+import com.streakstudy.application.dto.FlashcardDetailResponse;
 import com.streakstudy.application.dto.UpdateFlashcardRequest;
+import com.streakstudy.domain.repository.DeckRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +19,14 @@ import com.streakstudy.infrastructure.tenancy.TenantContext;
 public class FlashcardService {
 
     private final FlashcardRepository flashcards;
+    private final DeckRepository decks;
 
-    public FlashcardService(FlashcardRepository flashcards) {
+    public FlashcardService(
+            FlashcardRepository flashcards,
+            DeckRepository decks
+    ) {
         this.flashcards = flashcards;
+        this.decks = decks;
     }
 
     @Transactional
@@ -27,11 +34,22 @@ public class FlashcardService {
 
         Long tenantId = TenantContext.requireInstitutionId();
 
+        decks.findByIdAndInstitutionId(
+                req.deckId(),
+                tenantId
+        ).orElseThrow(() ->
+                new EntityNotFoundException(
+                        "Deck",
+                        req.deckId().toString()
+                )
+        );
+
         Flashcard flashcard = Flashcard.newInstance(
                 tenantId,
                 req.deckId(),
                 req.question(),
-                req.answer()
+                req.answer(),
+                req.difficulty()
         );
 
         return FlashcardResponse.from(
@@ -52,13 +70,13 @@ public class FlashcardService {
     }
 
     @Transactional(readOnly = true)
-    public FlashcardResponse getById(Long id) {
+    public FlashcardDetailResponse getById(Long id) {
 
         Long tenantId = TenantContext.requireInstitutionId();
 
         return flashcards
                 .findByIdAndInstitutionId(id, tenantId)
-                .map(FlashcardResponse::from)
+                .map(FlashcardDetailResponse::from)
                 .orElseThrow(() ->
                         new EntityNotFoundException(
                                 "Flashcard",
@@ -66,6 +84,7 @@ public class FlashcardService {
                         )
                 );
     }
+
     @Transactional
     public FlashcardResponse update(Long id, UpdateFlashcardRequest req) {
 
@@ -82,13 +101,15 @@ public class FlashcardService {
 
         flashcard.update(
                 req.getQuestion(),
-                req.getAnswer()
+                req.getAnswer(),
+                req.getDifficulty()
         );
 
         return FlashcardResponse.from(
                 flashcards.save(flashcard)
         );
     }
+
     @Transactional
     public void delete(Long id) {
 
