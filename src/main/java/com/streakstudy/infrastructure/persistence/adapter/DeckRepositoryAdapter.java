@@ -22,7 +22,11 @@ public class DeckRepositoryAdapter implements DeckRepository {
 
     @Override
     public Deck save(Deck deck) {
-        DeckJpa saved = jpa.save(DeckMapper.toJpa(deck));
+
+        DeckJpa saved = jpa.save(
+                DeckMapper.toJpa(deck)
+        );
+
         return DeckMapper.toDomain(saved);
     }
 
@@ -31,12 +35,14 @@ public class DeckRepositoryAdapter implements DeckRepository {
             Long id,
             Long institutionId
     ) {
+
         return jpa.findByIdAndInstitutionId(id, institutionId)
                 .map(DeckMapper::toDomain);
     }
 
     @Override
     public List<Deck> findAllByInstitutionId(Long institutionId) {
+
         return jpa.findAllByInstitutionId(institutionId)
                 .stream()
                 .map(DeckMapper::toDomain)
@@ -53,6 +59,7 @@ public class DeckRepositoryAdapter implements DeckRepository {
             Long id,
             Long institutionId
     ) {
+
         jpa.deleteByIdAndInstitutionIdScoped(id, institutionId);
     }
 }

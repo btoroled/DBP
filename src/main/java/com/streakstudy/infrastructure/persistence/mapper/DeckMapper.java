@@ -5,9 +5,11 @@ import com.streakstudy.infrastructure.persistence.entity.DeckJpa;
 
 public final class DeckMapper {
 
-    private DeckMapper() {}
+    private DeckMapper() {
+    }
 
     public static Deck toDomain(DeckJpa jpa) {
+
         return new Deck(
                 jpa.getId(),
                 jpa.getInstitutionId(),
@@ -18,6 +20,7 @@ public final class DeckMapper {
     }
 
     public static DeckJpa toJpa(Deck domain) {
+
         DeckJpa jpa = new DeckJpa();
 
         jpa.setId(domain.id());

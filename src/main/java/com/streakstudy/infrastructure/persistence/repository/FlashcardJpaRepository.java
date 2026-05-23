@@ -7,24 +7,26 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-import com.streakstudy.infrastructure.persistence.entity.DeckJpa;
+import com.streakstudy.infrastructure.persistence.entity.FlashcardJpa;
 
-public interface DeckJpaRepository extends JpaRepository<DeckJpa, Long> {
+public interface FlashcardJpaRepository
+        extends JpaRepository<FlashcardJpa, Long> {
 
-    Optional<DeckJpa> findByIdAndInstitutionId(
+    Optional<FlashcardJpa> findByIdAndInstitutionId(
             Long id,
             Long institutionId
     );
 
-    List<DeckJpa> findAllByInstitutionId(Long institutionId);
-
-    long countByInstitutionId(Long institutionId);
+    List<FlashcardJpa> findAllByDeckIdAndInstitutionId(
+            Long deckId,
+            Long institutionId
+    );
 
     @Modifying
     @Query("""
-        delete from DeckJpa d
-        where d.id = :id
-        and d.institutionId = :institutionId
+        delete from FlashcardJpa f
+        where f.id = :id
+        and f.institutionId = :institutionId
     """)
     int deleteByIdAndInstitutionIdScoped(
             Long id,

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.streakstudy.application.dto.CreateDeckRequest;
 import com.streakstudy.application.dto.DeckResponse;
+import com.streakstudy.application.dto.UpdateDeckRequest;
 import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.model.Deck;
 import com.streakstudy.domain.repository.DeckRepository;
@@ -23,6 +24,7 @@ public class DeckService {
 
     @Transactional
     public DeckResponse create(CreateDeckRequest req) {
+
         Long tenantId = TenantContext.requireInstitutionId();
 
         Deck toSave = Deck.newInstance(
@@ -31,11 +33,14 @@ public class DeckService {
                 req.description()
         );
 
-        return DeckResponse.from(decks.save(toSave));
+        return DeckResponse.from(
+                decks.save(toSave)
+        );
     }
 
     @Transactional(readOnly = true)
     public List<DeckResponse> listForCurrentTenant() {
+
         Long tenantId = TenantContext.requireInstitutionId();
 
         return decks.findAllByInstitutionId(tenantId)
@@ -46,6 +51,7 @@ public class DeckService {
 
     @Transactional(readOnly = true)
     public DeckResponse getByIdForCurrentTenant(Long id) {
+
         Long tenantId = TenantContext.requireInstitutionId();
 
         return decks.findByIdAndInstitutionId(id, tenantId)
@@ -54,7 +60,32 @@ public class DeckService {
     }
 
     @Transactional
+    public DeckResponse updateForCurrentTenant(
+            Long id,
+            UpdateDeckRequest req
+    ) {
+
+        Long tenantId = TenantContext.requireInstitutionId();
+
+        Deck existing = decks.findByIdAndInstitutionId(id, tenantId)
+                .orElseThrow(() -> tenantScopedNotFound(id, tenantId));
+
+        Deck updated = new Deck(
+                existing.id(),
+                existing.institutionId(),
+                req.name(),
+                req.description(),
+                existing.createdAt()
+        );
+
+        return DeckResponse.from(
+                decks.save(updated)
+        );
+    }
+
+    @Transactional
     public void deleteByIdForCurrentTenant(Long id) {
+
         Long tenantId = TenantContext.requireInstitutionId();
 
         decks.findByIdAndInstitutionId(id, tenantId)
