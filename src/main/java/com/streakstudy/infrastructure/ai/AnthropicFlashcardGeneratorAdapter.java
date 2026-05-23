@@ -15,13 +15,14 @@ import java.util.Map;
 @Component
 public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorPort {
 
+    public static final String MODEL    = "claude-haiku-4-5-20251001";
+    public static final String PROVIDER = "anthropic";
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL = "claude-haiku-4-5-20251001";
     private static final String SYSTEM_PROMPT = """
             Eres un asistente que genera flashcards educativas a partir de texto académico.
             Dado un fragmento de texto, devuelve ÚNICAMENTE un array JSON con objetos que tengan
             los campos "question" y "answer". Sin texto adicional, solo el JSON.
-            Genera entre 2 y 5 flashcards por fragmento. Las respuestas deben ser concisas (máx 80 palabras).
+            Genera entre 2 y 5 flashcards. Las respuestas deben ser concisas (máx 80 palabras).
             Ejemplo: [{"question":"¿Qué es X?","answer":"X es..."}]
             """;
 
@@ -37,7 +38,7 @@ public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorP
     }
 
     @Override
-    public List<FlashcardSuggestion> generate(String textChunk) {
+    public GenerationResult generate(String textChunk) {
         Map<String, Object> body = Map.of(
                 "model", MODEL,
                 "max_tokens", 1024,
@@ -57,13 +58,17 @@ public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorP
         return parseResponse(raw);
     }
 
-    private List<FlashcardSuggestion> parseResponse(String raw) {
+    private GenerationResult parseResponse(String raw) {
         try {
             JsonNode root = objectMapper.readTree(raw);
             String content = root.path("content").get(0).path("text").asText();
-            // Strip possible markdown code fences
             content = content.replaceAll("(?s)```json\\s*|```", "").strip();
-            return objectMapper.readValue(content, new TypeReference<>() {});
+            List<FlashcardSuggestion> flashcards = objectMapper.readValue(content, new TypeReference<>() {});
+
+            int inputTokens  = root.path("usage").path("input_tokens").asInt(0);
+            int outputTokens = root.path("usage").path("output_tokens").asInt(0);
+
+            return new GenerationResult(flashcards, inputTokens, outputTokens);
         } catch (Exception e) {
             throw new RuntimeException("Error al parsear respuesta de Anthropic: " + e.getMessage(), e);
         }

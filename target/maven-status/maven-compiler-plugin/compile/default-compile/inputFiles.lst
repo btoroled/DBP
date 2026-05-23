@@ -1,4 +1,5 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/StreakStudyApplication.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/AiGenerationJobResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/AuthResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/BadgePurchaseRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/CourseResponse.java
@@ -23,6 +24,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/AiFlashcardGeneratorPort.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/DocumentProcessingPort.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/FinishReviewUseCase.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/GetUserProgressUseCase.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/PasswordHasher.java
@@ -31,6 +33,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/AuthService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/CourseService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/DeckService.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/DocumentProcessingService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/DocumentService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/FlashcardService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/InstitutionService.java
@@ -50,6 +53,8 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/MaxStreakFreezesReachedException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/TenantViolationException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/AiGenerationJob.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/AiGenerationJobStatus.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/Badge.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/Course.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/Deck.java
@@ -63,6 +68,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/UserRole.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/model/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/AiGenerationJobRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/CourseRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/DeckRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/DocumentRepository.java
@@ -73,9 +79,11 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/AnthropicFlashcardGeneratorAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/PdfBoxTextExtractorAdapter.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/AsyncConfig.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/job/StreakResetJob.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/AiGenerationJobRepositoryAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/CourseRepositoryAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/DeckRepositoryAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/DocumentRepositoryAdapter.java
@@ -83,6 +91,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/InstitutionRepositoryAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/RewardItemRepositoryAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/UserRepositoryAdapter.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/AiGenerationJobJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/CourseJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/DeckJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/DocumentJpa.java
@@ -92,6 +101,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/TenantAwareEntityListener.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/TenantAwareJpaEntity.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/UserJpa.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/AiGenerationJobMapper.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/CourseMapper.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/DeckMapper.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/DocumentMapper.java
@@ -100,6 +110,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/RewardItemMapper.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/mapper/UserMapper.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/AiGenerationJobJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/CourseJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/DeckJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/DocumentJpaRepository.java

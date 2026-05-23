@@ -11,6 +11,7 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 - [Stack Tecnológico](#stack-tecnológico)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Dominio del Negocio](#dominio-del-negocio)
+- [PDF → Flashcards con IA](#pdf--flashcards-con-ia)
 - [API REST](#api-rest)
 - [Multitenancy](#multitenancy)
 - [Seguridad y Autenticación](#seguridad-y-autenticación)
@@ -27,6 +28,8 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 StreakStudy API es el backend de una plataforma educativa gamificada. Cada institución educativa opera como un tenant aislado: sus usuarios y cursos no son visibles desde otros tenants. La autenticación es por JWT y el contexto de tenant se propaga automáticamente en cada request.
 
 Los estudiantes acumulan XP y rachas diarias completando revisiones. Pueden gastar su XP en la tienda para comprar streak freezes y badges. Un job diario reinicia las rachas de los estudiantes inactivos.
+
+Los estudiantes también pueden subir documentos PDF y, una vez procesados, solicitar que la IA genere flashcards automáticamente a partir del contenido.
 
 ---
 
@@ -75,6 +78,8 @@ El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
 | Contenedores      | Docker + Docker Compose           |
 | Tests unitarios   | JUnit 5 + Mockito                 |
 | Tests integración | @DataJpaTest + H2 + Testcontainers |
+| Extracción PDF    | Apache PDFBox 3.0.3               |
+| IA generativa     | Anthropic Claude Haiku (`claude-haiku-4-5-20251001`) |
 
 ---
 
@@ -88,15 +93,25 @@ src/main/java/com/streakstudy/
 │   │   ├── User.java
 │   │   ├── Course.java
 │   │   ├── Institution.java
-│   │   ├── Badge.java             # Badge comprable con XP
-│   │   ├── RewardItem.java        # Item de la tienda (streak freeze, badges)
-│   │   ├── UserRole.java          # Enum: STUDENT, TEACHER, INSTITUTION_ADMIN, SUPER_ADMIN
-│   │   └── TenantAware.java       # Interface marker para entidades con tenant
+│   │   ├── Badge.java
+│   │   ├── RewardItem.java
+│   │   ├── Document.java          # Documento PDF subido
+│   │   ├── DocumentStatus.java    # Enum: PENDING, PROCESSING, READY, FAILED
+│   │   ├── AiGenerationJob.java   # Job de generación de flashcards
+│   │   ├── AiGenerationJobStatus.java  # Enum: PENDING, RUNNING, COMPLETED, FAILED
+│   │   ├── Deck.java              # Mazo de flashcards
+│   │   ├── Flashcard.java         # Flashcard individual
+│   │   ├── UserRole.java
+│   │   └── TenantAware.java
 │   ├── repository/
 │   │   ├── UserRepository.java
 │   │   ├── CourseRepository.java
 │   │   ├── InstitutionRepository.java
-│   │   └── RewardItemRepository.java
+│   │   ├── RewardItemRepository.java
+│   │   ├── DocumentRepository.java
+│   │   ├── AiGenerationJobRepository.java
+│   │   ├── DeckRepository.java
+│   │   └── FlashcardRepository.java
 │   └── exception/
 │       ├── DomainException.java
 │       ├── BadgeAlreadyOwnedException.java
@@ -111,6 +126,8 @@ src/main/java/com/streakstudy/
 │   ├── service/
 │   │   ├── AuthService.java
 │   │   ├── CourseService.java
+│   │   ├── DocumentService.java         # Lógica de documentos y dedup
+│   │   ├── DocumentProcessingService.java  # Procesamiento async (PDF + IA)
 │   │   ├── InstitutionService.java
 │   │   ├── LeaderboardService.java
 │   │   ├── RewardItemService.java
@@ -118,16 +135,24 @@ src/main/java/com/streakstudy/
 │   │   ├── StreakResetService.java
 │   │   └── UserProgressService.java
 │   └── port/
+│       ├── DocumentProcessingPort.java  # Interface para procesamiento async
+│       ├── PdfTextExtractorPort.java    # Interface para extracción de texto
+│       ├── AiFlashcardGeneratorPort.java  # Interface para generación IA
 │       ├── FinishReviewUseCase.java
 │       ├── GetUserProgressUseCase.java
 │       ├── PasswordHasher.java
 │       └── TokenIssuer.java
 └── infrastructure/
-    ├── job/                       # StreakResetJob (tarea diaria)
-    ├── persistence/               # JPA entities, repositories, adapters, mappers
-    ├── security/                  # JwtService, JwtAuthenticationFilter, SecurityConfig
-    ├── tenancy/                   # TenantContext, TenantAwareJpaEntity, EntityListener
-    └── web/                       # Controllers, GlobalExceptionHandler
+    ├── ai/
+    │   ├── PdfBoxTextExtractorAdapter.java      # PDFBox 3.x
+    │   └── AnthropicFlashcardGeneratorAdapter.java  # Anthropic REST API
+    ├── config/
+    │   └── AsyncConfig.java          # ThreadPoolTaskExecutor para PDF/IA
+    ├── job/                          # StreakResetJob (tarea diaria)
+    ├── persistence/                  # JPA entities, repositories, adapters, mappers
+    ├── security/                     # JwtService, JwtAuthenticationFilter, SecurityConfig
+    ├── tenancy/                      # TenantContext, TenantAwareJpaEntity, EntityListener
+    └── web/                          # Controllers, GlobalExceptionHandler
 ```
 
 ---
@@ -136,13 +161,17 @@ src/main/java/com/streakstudy/
 
 ### Entidades
 
-| Entidad       | Tenant-Aware | Descripción                                        |
-|---------------|:------------:|----------------------------------------------------|
-| `Institution` | No (raíz)    | Institución educativa (`code`: "utec", "pucp")     |
-| `User`        | Sí           | Usuario con XP, racha diaria y badges              |
-| `Course`      | Sí           | Curso perteneciente a una institución              |
-| `Badge`       | No           | Insignia comprable con XP                          |
-| `RewardItem`  | No           | Item del catálogo de la tienda                     |
+| Entidad            | Tenant-Aware | Descripción                                              |
+|--------------------|:------------:|----------------------------------------------------------|
+| `Institution`      | No (raíz)    | Institución educativa (`code`: "utec", "pucp")           |
+| `User`             | Sí           | Usuario con XP, racha diaria y badges                    |
+| `Course`           | Sí           | Curso perteneciente a una institución                    |
+| `Badge`            | No           | Insignia comprable con XP                                |
+| `RewardItem`       | No           | Item del catálogo de la tienda                           |
+| `Document`         | Sí           | PDF subido; pasa por estados PENDING → PROCESSING → READY |
+| `AiGenerationJob`  | No           | Registro de un trabajo de generación IA con tracking de tokens y costo |
+| `Deck`             | Sí           | Mazo de flashcards                                       |
+| `Flashcard`        | Sí           | Pregunta + respuesta generada por IA                     |
 
 ### Roles de Usuario
 
@@ -159,6 +188,50 @@ src/main/java/com/streakstudy/
 - **Racha:** Días consecutivos con al menos una revisión completada. Un job diario reinicia la racha de estudiantes inactivos.
 - **Streak Freeze:** Item comprable que protege la racha ante un día sin actividad.
 - **Badges:** Insignias comprables con XP en la tienda.
+
+---
+
+## PDF → Flashcards con IA
+
+### Flujo de Procesamiento
+
+El pipeline está completamente asíncrono: el hilo HTTP siempre responde de inmediato (202 Accepted) y el trabajo pesado se ejecuta en un `ThreadPoolTaskExecutor` dedicado (`pdfProcessorExecutor`, 2–4 hilos).
+
+```
+Cliente                   API (hilo HTTP)              pdfProcessorExecutor
+  │                            │                              │
+  │── POST /upload ──────────► │                              │
+  │                            │ valida tipo + tamaño         │
+  │                            │ calcula SHA-256 (dedup)      │
+  │                            │ guarda Document PENDING      │
+  │                            │ ──── processPdf() ──────────►│
+  │◄── 202 { documentId } ───  │                              │ extrae texto (PDFBox)
+  │                            │                              │ → Document READY
+  │── GET /status ───────────► │                              │
+  │◄── { status: "READY" } ── │                              │
+  │                            │                              │
+  │── POST /generate ────────► │                              │
+  │                            │ crea AiGenerationJob PENDING │
+  │                            │ ──── generateFlashcards() ──►│
+  │◄── 202 { jobId } ─────── │                              │ divide en chunks de 2000 chars
+  │                            │                              │ llama a Claude Haiku por chunk
+  │── GET /jobs/{jobId} ─────► │                              │ guarda Flashcards
+  │◄── { status: "COMPLETED"} │                              │ → Job COMPLETED + tokens + costo
+```
+
+### Deduplicación de Documentos
+
+Cada PDF subido se identifica por su hash SHA-256. Si un archivo idéntico ya existe, el endpoint devuelve el documento existente con `"duplicate": true` sin reprocesar.
+
+### Tracking de Costos
+
+Cada `AiGenerationJob` registra:
+- `totalInputTokens` / `totalOutputTokens` acumulados sobre todos los chunks
+- `estimatedCostUsd` calculado con los precios de Haiku: $0.80/M input · $4.00/M output
+
+### Propagación del Tenant en Threads Async
+
+Como los threads del pool no heredan el `ThreadLocal` del hilo HTTP, los métodos de `DocumentProcessingService` reciben `institutionId` como parámetro explícito y llaman a `TenantContext.set(institutionId)` al inicio, liberándolo en un bloque `finally`.
 
 ---
 
@@ -200,6 +273,90 @@ POST /api/auth/login
   "institutionId": 1,
   "email": "alumno@utec.edu.pe",
   "role": "STUDENT"
+}
+```
+
+---
+
+### Documentos PDF y Flashcards IA (`/api/documents`) — Requiere JWT
+
+| Método | Endpoint                              | Descripción                                              |
+|--------|---------------------------------------|----------------------------------------------------------|
+| POST   | `/api/documents/upload`               | Subir PDF (multipart/form-data) → 202 Accepted          |
+| GET    | `/api/documents/{id}/status`          | Consultar estado de procesamiento del documento          |
+| GET    | `/api/documents/{id}/markdown`        | Obtener texto extraído del PDF (solo si READY)           |
+| POST   | `/api/documents/{id}/generate-flashcards` | Disparar generación IA → 202 Accepted con jobId      |
+| GET    | `/api/documents/jobs/{jobId}`         | Consultar estado del job IA (tokens, costo)              |
+| GET    | `/api/documents/{id}/flashcards`      | Obtener las flashcards generadas para el documento       |
+
+**Subir PDF:**
+```
+POST /api/documents/upload
+Authorization: Bearer <jwt>
+Content-Type: multipart/form-data
+
+file=@apuntes.pdf
+```
+
+**Respuesta upload:**
+```json
+{
+  "documentId": 42,
+  "originalFilename": "apuntes.pdf",
+  "status": "PENDING",
+  "duplicate": false
+}
+```
+
+**Estado del documento:**
+```json
+GET /api/documents/42/status
+
+{
+  "documentId": 42,
+  "originalFilename": "apuntes.pdf",
+  "status": "READY",
+  "markdownAvailable": true
+}
+```
+
+**Generar flashcards:**
+```json
+POST /api/documents/42/generate-flashcards
+Authorization: Bearer <jwt>
+
+{
+  "deckId": 7
+}
+```
+
+**Respuesta generación:**
+```json
+{
+  "jobId": 77,
+  "documentId": 42,
+  "deckId": 7,
+  "status": "PENDING",
+  "totalInputTokens": 0,
+  "totalOutputTokens": 0,
+  "estimatedCostUsd": 0.0,
+  "errorMessage": null
+}
+```
+
+**Estado del job (finalizado):**
+```json
+GET /api/documents/jobs/77
+
+{
+  "jobId": 77,
+  "documentId": 42,
+  "deckId": 7,
+  "status": "COMPLETED",
+  "totalInputTokens": 1200,
+  "totalOutputTokens": 480,
+  "estimatedCostUsd": 0.00288,
+  "errorMessage": null
 }
 ```
 
@@ -365,6 +522,7 @@ El aislamiento entre tenants se implementa en múltiples capas:
 3. **Services:** Todos los métodos de servicios tenant-aware llaman a `TenantContext.requireInstitutionId()` antes de ejecutar.
 4. **Queries JPA:** Todas las consultas de entidades tenant-aware incluyen `institutionId` como parámetro explícito.
 5. **JPA Listener:** `TenantAwareEntityListener` valida en `@PrePersist` y `@PreUpdate` que el `institution_id` de la entidad coincide con el contexto actual. Si hay mismatch, lanza `TenantViolationException`.
+6. **Threads async:** Los métodos de `DocumentProcessingService` reciben `institutionId` explícitamente y establecen el `TenantContext` en el thread del pool.
 
 El resultado: si el tenant A intenta acceder a datos del tenant B, recibe `404` (para no filtrar la existencia del recurso) o `403`.
 
@@ -396,6 +554,7 @@ Copiar `.env.example` a `.env` y completar los valores:
 | `JPA_SHOW_SQL`       | `true`                                            | Loguear SQL en consola                   |
 | `JWT_SECRET`         | *(inseguro por defecto)*                          | **Cambiar en producción** (min 32 chars) |
 | `JWT_EXPIRATION_MS`  | `3600000`                                         | Expiración JWT en milisegundos (1h)      |
+| `ANTHROPIC_API_KEY`  | *(requerido para IA)*                             | API key de Anthropic para Claude Haiku   |
 
 ---
 
@@ -404,6 +563,7 @@ Copiar `.env.example` a `.env` y completar los valores:
 ```bash
 # Copiar variables de entorno
 cp .env.example .env
+# Editar .env y agregar ANTHROPIC_API_KEY
 
 # Levantar PostgreSQL + API
 docker compose up -d --build
@@ -442,6 +602,7 @@ DB_URL=jdbc:postgresql://localhost:5432/streakstudy_db \
 DB_USER=postgres \
 DB_PASSWORD=postgres \
 JWT_SECRET=mi-secreto-de-al-menos-32-caracteres-aqui \
+ANTHROPIC_API_KEY=sk-ant-... \
 ./mvnw spring-boot:run
 ```
 
@@ -467,6 +628,9 @@ JWT_SECRET=mi-secreto-de-al-menos-32-caracteres-aqui \
 | `StoreServiceTest`                      | Unitario       | Compra de streak freezes y badges, validaciones XP  |
 | `StreakResetServiceTest`                | Unitario       | Reset de rachas de usuarios inactivos               |
 | `UserProgressServiceTest`               | Unitario       | Registro de revisiones, acumulación de XP y racha   |
+| `DocumentChunkingTest`                  | Unitario       | Chunking de texto: caso vacío, un chunk, múltiples, párrafos largos |
+| `DocumentServiceTest`                   | Unitario       | Upload válido, PDF duplicado, archivo no-PDF, triggerGeneration, dedup de jobs |
+| `DocumentControllerTest`                | Integración    | Endpoints de documentos (MockMvc): upload, status, job status |
 | `CourseRepositoryAdapterTest`           | Integración    | Consultas JPA de cursos (H2)                        |
 | `InstitutionRepositoryAdapterTest`      | Integración    | Consultas JPA de instituciones (H2)                 |
 | `RewardItemRepositoryAdapterTest`       | Integración    | Consultas JPA de items de tienda (H2)               |

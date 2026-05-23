@@ -1,155 +1,162 @@
 package com.streakstudy.application.service;
 
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.util.HexFormat;
-import java.util.List;
-
+import com.streakstudy.application.dto.AiGenerationJobResponse;
+import com.streakstudy.application.dto.DocumentStatusResponse;
+import com.streakstudy.application.dto.DocumentUploadResponse;
+import com.streakstudy.domain.exception.EntityNotFoundException;
+import com.streakstudy.domain.model.AiGenerationJob;
+import com.streakstudy.domain.model.AiGenerationJobStatus;
+import com.streakstudy.domain.model.Document;
+import com.streakstudy.domain.model.DocumentStatus;
+import com.streakstudy.domain.model.Flashcard;
+import com.streakstudy.domain.repository.AiGenerationJobRepository;
+import com.streakstudy.domain.repository.DocumentRepository;
+import com.streakstudy.application.port.DocumentProcessingPort;
+import com.streakstudy.domain.repository.FlashcardRepository;
+import com.streakstudy.infrastructure.ai.AnthropicFlashcardGeneratorAdapter;
+import com.streakstudy.infrastructure.tenancy.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.streakstudy.application.dto.DocumentStatusResponse;
-import com.streakstudy.application.dto.DocumentUploadResponse;
-import com.streakstudy.application.port.AiFlashcardGeneratorPort;
-import com.streakstudy.application.port.AiFlashcardGeneratorPort.FlashcardSuggestion;
-import com.streakstudy.application.port.PdfTextExtractorPort;
-import com.streakstudy.domain.exception.EntityNotFoundException;
-import com.streakstudy.domain.model.Document;
-import com.streakstudy.domain.model.DocumentStatus;
-import com.streakstudy.domain.model.Flashcard;
-import com.streakstudy.domain.repository.DocumentRepository;
-import com.streakstudy.domain.repository.FlashcardRepository;
-import com.streakstudy.infrastructure.tenancy.TenantContext;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
 
 @Service
 public class DocumentService {
 
-    private static final int MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
-    private static final int CHUNK_SIZE = 2000;
+    public static final int CHUNK_SIZE = 2000;
 
-    private final DocumentRepository documentRepository;
-    private final FlashcardRepository flashcardRepository;
-    private final PdfTextExtractorPort pdfExtractor;
-    private final AiFlashcardGeneratorPort aiGenerator;
+    private static final int MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+
+    private final DocumentRepository        documentRepository;
+    private final AiGenerationJobRepository jobRepository;
+    private final FlashcardRepository       flashcardRepository;
+    private final DocumentProcessingPort processingService;
 
     public DocumentService(DocumentRepository documentRepository,
+                           AiGenerationJobRepository jobRepository,
                            FlashcardRepository flashcardRepository,
-                           PdfTextExtractorPort pdfExtractor,
-                           AiFlashcardGeneratorPort aiGenerator) {
-        this.documentRepository = documentRepository;
+                           DocumentProcessingPort processingService) {
+        this.documentRepository  = documentRepository;
+        this.jobRepository       = jobRepository;
         this.flashcardRepository = flashcardRepository;
-        this.pdfExtractor = pdfExtractor;
-        this.aiGenerator = aiGenerator;
+        this.processingService   = processingService;
     }
 
     @Transactional
     public DocumentUploadResponse upload(MultipartFile file, Long userId) {
         validateFile(file);
 
-        String hash = sha256(file);
+        byte[] bytes = readBytes(file);
+        String hash  = sha256(bytes);
 
-        // Detect duplicate by hash within tenant
         var existing = documentRepository.findByFileHash(hash);
         if (existing.isPresent()) {
             Document doc = existing.get();
             return new DocumentUploadResponse(doc.id(), doc.originalFilename(), doc.status(), true);
         }
 
-        Document doc = Document.newUpload(
-                TenantContext.requireInstitutionId(),
-                userId,
-                file.getOriginalFilename(),
-                file.getSize(),
-                hash
-        );
-        doc = documentRepository.save(doc);
+        Long institutionId = TenantContext.requireInstitutionId();
+        Document doc = documentRepository.save(
+                Document.newUpload(institutionId, userId, file.getOriginalFilename(), file.getSize(), hash));
 
-        // Extract text and update status synchronously
-        try {
-            doc = documentRepository.save(doc.withStatus(DocumentStatus.PROCESSING));
-            String text = pdfExtractor.extract(file.getInputStream());
-            doc = documentRepository.save(doc.withMarkdown(text));
-        } catch (Exception e) {
-            documentRepository.save(doc.withStatus(DocumentStatus.FAILED));
-            throw new RuntimeException("Error al procesar el PDF: " + e.getMessage(), e);
-        }
+        // Procesamiento asíncrono: el hilo HTTP retorna de inmediato
+        processingService.processPdf(doc.id(), bytes, institutionId);
 
-        return new DocumentUploadResponse(doc.id(), doc.originalFilename(), doc.status(), false);
+        return new DocumentUploadResponse(doc.id(), doc.originalFilename(), DocumentStatus.PENDING, false);
     }
 
     @Transactional(readOnly = true)
     public DocumentStatusResponse getStatus(Long documentId) {
         Document doc = requireDocument(documentId);
-        return new DocumentStatusResponse(
-                doc.id(),
-                doc.originalFilename(),
-                doc.status(),
-                doc.markdownContent() != null
-        );
+        return new DocumentStatusResponse(doc.id(), doc.originalFilename(), doc.status(),
+                doc.markdownContent() != null);
     }
 
     @Transactional(readOnly = true)
     public String getMarkdown(Long documentId) {
         Document doc = requireDocument(documentId);
-        if (doc.markdownContent() == null) {
-            throw new IllegalStateException("El markdown aún no está disponible para este documento");
-        }
+        if (doc.markdownContent() == null)
+            throw new IllegalStateException("El markdown aún no está disponible. Estado: " + doc.status());
         return doc.markdownContent();
     }
 
     @Transactional
-    public List<FlashcardSuggestion> generateFlashcards(Long documentId, Long deckId) {
+    public AiGenerationJobResponse triggerGeneration(Long documentId, Long deckId) {
         Document doc = requireDocument(documentId);
-        if (doc.status() != DocumentStatus.READY) {
-            throw new IllegalStateException("El documento no está listo. Estado actual: " + doc.status());
-        }
+        if (doc.status() != DocumentStatus.READY)
+            throw new IllegalStateException("El documento no está listo. Estado: " + doc.status());
 
-        List<String> chunks = chunk(doc.markdownContent(), CHUNK_SIZE);
+        // Evitar regeneración si ya existe un job completado
+        if (jobRepository.findByDocumentIdAndStatus(documentId, AiGenerationJobStatus.COMPLETED).isPresent())
+            throw new IllegalStateException("Las flashcards ya fueron generadas para este documento");
 
-        List<FlashcardSuggestion> suggestions = chunks.stream()
-                .flatMap(c -> aiGenerator.generate(c).stream())
-                .toList();
+        AiGenerationJob job = jobRepository.save(AiGenerationJob.create(
+                documentId, deckId, AnthropicFlashcardGeneratorAdapter.PROVIDER,
+                AnthropicFlashcardGeneratorAdapter.MODEL));
 
-        Long institutionId = TenantContext.requireInstitutionId();
-        suggestions.forEach(s -> flashcardRepository.save(
-                Flashcard.newInstance(institutionId, deckId, s.question(), s.answer())
-        ));
+        processingService.generateFlashcards(job.id(), doc.markdownContent(), deckId,
+                TenantContext.requireInstitutionId());
 
-        return suggestions;
+        return toResponse(job);
     }
 
-    private Document requireDocument(Long documentId) {
-        return documentRepository.findById(documentId)
-                .orElseThrow(() -> new EntityNotFoundException("Document", documentId));
+    @Transactional(readOnly = true)
+    public AiGenerationJobResponse getJobStatus(Long jobId) {
+        return jobRepository.findById(jobId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("AiGenerationJob", jobId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Flashcard> getFlashcards(Long documentId) {
+        requireDocument(documentId);
+        Long institutionId = TenantContext.requireInstitutionId();
+        return jobRepository.findByDocumentIdAndStatus(documentId, AiGenerationJobStatus.COMPLETED)
+                .map(job -> flashcardRepository.findAllByDeckIdAndInstitutionId(job.deckId(), institutionId))
+                .orElse(List.of());
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────
+
+    private Document requireDocument(Long id) {
+        return documentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Document", id));
+    }
+
+    private AiGenerationJobResponse toResponse(AiGenerationJob j) {
+        return new AiGenerationJobResponse(j.id(), j.documentId(), j.deckId(), j.status(),
+                j.totalInputTokens(), j.totalOutputTokens(), j.estimatedCostUsd(), j.errorMessage());
     }
 
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) throw new IllegalArgumentException("El archivo está vacío");
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) throw new IllegalArgumentException("El archivo supera el límite de 20 MB");
+        if (file.getSize() > MAX_FILE_SIZE_BYTES)
+            throw new IllegalArgumentException("El archivo supera el límite de 20 MB");
         String ct = file.getContentType();
-        if (ct == null || !ct.equals("application/pdf")) {
+        if (ct == null || !ct.equals("application/pdf"))
             throw new IllegalArgumentException("Solo se aceptan archivos PDF");
-        }
     }
 
-    private static String sha256(MultipartFile file) {
-        try (InputStream is = file.getInputStream()) {
+    private static byte[] readBytes(MultipartFile file) {
+        try { return file.getBytes(); }
+        catch (Exception e) { throw new RuntimeException("Error al leer el archivo", e); }
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = is.read(buf)) != -1) digest.update(buf, 0, n);
-            return HexFormat.of().formatHex(digest.digest());
-        } catch (Exception e) {
-            throw new RuntimeException("Error al calcular hash del archivo", e);
-        }
+            return HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (Exception e) { throw new RuntimeException("Error al calcular hash", e); }
     }
 
-    static List<String> chunk(String text, int maxChars) {
+    public static List<String> chunk(String text, int maxChars) {
         String[] paragraphs = text.split("\n\n+");
-        List<String> chunks = new java.util.ArrayList<>();
+        List<String> chunks = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-
         for (String para : paragraphs) {
             String p = para.strip();
             if (p.isBlank()) continue;

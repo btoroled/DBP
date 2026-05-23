@@ -6,5 +6,7 @@ public interface AiFlashcardGeneratorPort {
 
     record FlashcardSuggestion(String question, String answer) {}
 
-    List<FlashcardSuggestion> generate(String textChunk);
+    record GenerationResult(List<FlashcardSuggestion> flashcards, int inputTokens, int outputTokens) {}
+
+    GenerationResult generate(String textChunk);
 }
