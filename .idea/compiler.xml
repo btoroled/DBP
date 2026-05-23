@@ -13,10 +13,14 @@
         <module name="DBP_Project" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="PC1-ALEX" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="DBP_Project" options="-parameters" />
+      <module name="PC1-ALEX" options="-parameters" />
       <module name="streakstudy-api" options="-parameters" />
     </option>
   </component>
