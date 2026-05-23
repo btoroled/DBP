@@ -126,8 +126,10 @@ src/main/java/com/streakstudy/
 │   ├── service/
 │   │   ├── AuthService.java
 │   │   ├── CourseService.java
+│   │   ├── DeckService.java             # CRUD de mazos de flashcards
 │   │   ├── DocumentService.java         # Lógica de documentos y dedup
 │   │   ├── DocumentProcessingService.java  # Procesamiento async (PDF + IA)
+│   │   ├── FlashcardService.java        # CRUD de flashcards individuales
 │   │   ├── InstitutionService.java
 │   │   ├── LeaderboardService.java
 │   │   ├── RewardItemService.java
@@ -357,6 +359,97 @@ GET /api/documents/jobs/77
   "totalOutputTokens": 480,
   "estimatedCostUsd": 0.00288,
   "errorMessage": null
+}
+```
+
+---
+
+### Mazos de Flashcards (`/api/decks`) — Requiere JWT
+
+| Método | Endpoint           | Descripción                                  |
+|--------|--------------------|----------------------------------------------|
+| POST   | `/api/decks`       | Crear mazo (tenant actual)                   |
+| GET    | `/api/decks`       | Listar mazos del tenant actual               |
+| GET    | `/api/decks/{id}`  | Obtener mazo por ID (solo tenant actual)     |
+| PUT    | `/api/decks/{id}`  | Actualizar nombre/descripción del mazo       |
+| DELETE | `/api/decks/{id}`  | Eliminar mazo (solo tenant actual)           |
+
+**Crear mazo:**
+```json
+POST /api/decks
+Authorization: Bearer <jwt>
+
+{
+  "name": "Cálculo I - Derivadas",
+  "description": "Mazo de práctica para el primer parcial"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "id": 7,
+  "institutionId": 1,
+  "name": "Cálculo I - Derivadas",
+  "description": "Mazo de práctica para el primer parcial",
+  "createdAt": "2026-05-23T14:35:00Z"
+}
+```
+
+**Actualizar mazo:**
+```json
+PUT /api/decks/7
+Authorization: Bearer <jwt>
+
+{
+  "name": "Cálculo I - Derivadas e Integrales",
+  "description": "Mazo de práctica para parciales 1 y 2"
+}
+```
+
+---
+
+### Flashcards (`/api/flashcards`) — Requiere JWT
+
+| Método | Endpoint                          | Descripción                              |
+|--------|-----------------------------------|------------------------------------------|
+| POST   | `/api/flashcards`                 | Crear flashcard manualmente              |
+| GET    | `/api/flashcards/deck/{deckId}`   | Listar flashcards de un mazo             |
+| GET    | `/api/flashcards/{id}`            | Obtener flashcard por ID                 |
+| PUT    | `/api/flashcards/{id}`            | Actualizar pregunta/respuesta            |
+| DELETE | `/api/flashcards/{id}`            | Eliminar flashcard                       |
+
+**Crear flashcard:**
+```json
+POST /api/flashcards
+Authorization: Bearer <jwt>
+
+{
+  "deckId": 7,
+  "question": "¿Cuál es la derivada de sin(x)?",
+  "answer": "cos(x)"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "id": 101,
+  "deckId": 7,
+  "question": "¿Cuál es la derivada de sin(x)?",
+  "answer": "cos(x)",
+  "createdAt": "2026-05-23T14:40:00Z"
+}
+```
+
+**Actualizar flashcard:**
+```json
+PUT /api/flashcards/101
+Authorization: Bearer <jwt>
+
+{
+  "question": "¿Cuál es la derivada de sen(x)?",
+  "answer": "cos(x)"
 }
 ```
 
