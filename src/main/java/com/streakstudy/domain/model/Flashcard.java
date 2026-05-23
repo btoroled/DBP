@@ -8,10 +8,9 @@ public final class Flashcard implements TenantAware {
     private final Long id;
     private final Long institutionId;
     private final Long deckId;
-
     private String question;
     private String answer;
-
+    private Difficulty difficulty;
     private final Instant createdAt;
 
     public Flashcard(
@@ -20,6 +19,7 @@ public final class Flashcard implements TenantAware {
             Long deckId,
             String question,
             String answer,
+            Difficulty difficulty,
             Instant createdAt
     ) {
         this.id = id;
@@ -27,6 +27,7 @@ public final class Flashcard implements TenantAware {
         this.deckId = Objects.requireNonNull(deckId);
         this.question = Objects.requireNonNull(question);
         this.answer = Objects.requireNonNull(answer);
+        this.difficulty = Objects.requireNonNull(difficulty);
         this.createdAt = createdAt;
     }
 
@@ -34,7 +35,8 @@ public final class Flashcard implements TenantAware {
             Long institutionId,
             Long deckId,
             String question,
-            String answer
+            String answer,
+            Difficulty difficulty
     ) {
         return new Flashcard(
                 null,
@@ -42,13 +44,19 @@ public final class Flashcard implements TenantAware {
                 deckId,
                 question,
                 answer,
+                difficulty,
                 null
         );
     }
 
-    public void update(String question, String answer) {
+    public void update(
+            String question,
+            String answer,
+            Difficulty difficulty
+    ) {
         this.question = Objects.requireNonNull(question);
         this.answer = Objects.requireNonNull(answer);
+        this.difficulty = Objects.requireNonNull(difficulty);
     }
 
     public Long id() {
@@ -70,6 +78,10 @@ public final class Flashcard implements TenantAware {
 
     public String answer() {
         return answer;
+    }
+
+    public Difficulty difficulty() {
+        return difficulty;
     }
 
     public Instant createdAt() {

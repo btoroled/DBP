@@ -2,6 +2,7 @@ package com.streakstudy.infrastructure.persistence.entity;
 
 import java.time.Instant;
 
+import com.streakstudy.domain.model.Difficulty;
 import jakarta.persistence.*;
 
 @Entity
@@ -75,5 +76,15 @@ public class FlashcardJpa extends TenantAwareJpaEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+    @Enumerated(EnumType.STRING)
+    private Difficulty difficulty;
+
+    public Difficulty getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
     }
 }

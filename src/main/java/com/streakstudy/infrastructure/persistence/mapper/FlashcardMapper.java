@@ -8,13 +8,13 @@ public final class FlashcardMapper {
     private FlashcardMapper() {}
 
     public static Flashcard toDomain(FlashcardJpa jpa) {
-
         return new Flashcard(
                 jpa.getId(),
                 jpa.getInstitutionId(),
                 jpa.getDeckId(),
                 jpa.getQuestion(),
                 jpa.getAnswer(),
+                jpa.getDifficulty(),
                 jpa.getCreatedAt()
         );
     }
@@ -28,6 +28,7 @@ public final class FlashcardMapper {
         jpa.setDeckId(domain.deckId());
         jpa.setQuestion(domain.question());
         jpa.setAnswer(domain.answer());
+        jpa.setDifficulty(domain.difficulty());
         jpa.setCreatedAt(domain.createdAt());
 
         return jpa;

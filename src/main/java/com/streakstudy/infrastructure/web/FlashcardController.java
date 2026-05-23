@@ -2,6 +2,7 @@ package com.streakstudy.infrastructure.web;
 
 import java.util.List;
 
+import com.streakstudy.application.dto.FlashcardDetailResponse;
 import com.streakstudy.application.dto.UpdateFlashcardRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,19 +44,12 @@ public class FlashcardController {
     }
 
     @GetMapping("/{id}")
-    public FlashcardResponse getById(
+    public FlashcardDetailResponse getById(
             @PathVariable Long id
     ) {
         return flashcardService.getById(id);
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(
-            @PathVariable Long id
-    ) {
-        flashcardService.delete(id);
-    }
     @PutMapping("/{flashcardId}")
     public ResponseEntity<FlashcardResponse> updateFlashcard(
             @PathVariable Long flashcardId,
@@ -66,5 +60,13 @@ public class FlashcardController {
                 flashcardService.update(flashcardId, request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+            @PathVariable Long id
+    ) {
+        flashcardService.delete(id);
     }
 }

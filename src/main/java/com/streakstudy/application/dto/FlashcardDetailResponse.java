@@ -1,11 +1,11 @@
 package com.streakstudy.application.dto;
 
-import java.time.Instant;
-
 import com.streakstudy.domain.model.Difficulty;
 import com.streakstudy.domain.model.Flashcard;
 
-public record FlashcardResponse(
+import java.time.Instant;
+
+public record FlashcardDetailResponse(
         Long id,
         Long deckId,
         String question,
@@ -14,8 +14,10 @@ public record FlashcardResponse(
         Difficulty difficulty
 ) {
 
-    public static FlashcardResponse from(Flashcard flashcard) {
-        return new FlashcardResponse(
+    public static FlashcardDetailResponse from(
+            Flashcard flashcard
+    ) {
+        return new FlashcardDetailResponse(
                 flashcard.id(),
                 flashcard.deckId(),
                 flashcard.question(),
