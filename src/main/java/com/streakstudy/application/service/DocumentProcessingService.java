@@ -73,7 +73,14 @@ public class DocumentProcessingService implements DocumentProcessingPort {
 
                 for (var s : result.flashcards()) {
                     flashcardRepository.save(
-                            Flashcard.newInstance(institutionId, deckId, s.question(), s.answer()));
+                            Flashcard.newInstance(
+                                    institutionId,
+                                    deckId,
+                                    s.question(),
+                                    s.answer(),
+                                    com.streakstudy.domain.model.Difficulty.MEDIUM
+                            )
+                    );
                 }
             }
 
