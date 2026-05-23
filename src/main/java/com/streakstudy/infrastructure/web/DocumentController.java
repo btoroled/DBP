@@ -1,12 +1,12 @@
 package com.streakstudy.infrastructure.web;
 
+import com.streakstudy.application.dto.AiGenerationJobResponse;
 import com.streakstudy.application.dto.DocumentStatusResponse;
 import com.streakstudy.application.dto.DocumentUploadResponse;
 import com.streakstudy.application.dto.GenerateFlashcardsRequest;
-import com.streakstudy.application.port.AiFlashcardGeneratorPort.FlashcardSuggestion;
 import com.streakstudy.application.service.DocumentService;
+import com.streakstudy.domain.model.Flashcard;
 import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
-import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,12 +27,12 @@ public class DocumentController {
         this.documentService = documentService;
     }
 
+    /** Sube un PDF. Retorna 202 Accepted — el procesamiento ocurre en background. */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentUploadResponse> upload(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal AuthenticatedUserPrincipal principal) {
-        DocumentUploadResponse response = documentService.upload(file, principal.userId());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.accepted().body(documentService.upload(file, principal.userId()));
     }
 
     @GetMapping("/{documentId}/status")
@@ -47,11 +47,21 @@ public class DocumentController {
                 .body(documentService.getMarkdown(documentId));
     }
 
+    /** Dispara la generación de flashcards. Retorna 202 Accepted con el jobId para consultar estado. */
     @PostMapping("/{documentId}/generate-flashcards")
-    public ResponseEntity<List<FlashcardSuggestion>> generateFlashcards(
+    public ResponseEntity<AiGenerationJobResponse> generateFlashcards(
             @PathVariable Long documentId,
-            @Valid @RequestBody GenerateFlashcardsRequest request) {
-        List<FlashcardSuggestion> result = documentService.generateFlashcards(documentId, request.deckId());
-        return ResponseEntity.ok(result);
+            @RequestBody GenerateFlashcardsRequest request) {
+        return ResponseEntity.accepted().body(documentService.triggerGeneration(documentId, request.deckId()));
+    }
+
+    @GetMapping("/jobs/{jobId}")
+    public ResponseEntity<AiGenerationJobResponse> getJobStatus(@PathVariable Long jobId) {
+        return ResponseEntity.ok(documentService.getJobStatus(jobId));
+    }
+
+    @GetMapping("/{documentId}/flashcards")
+    public ResponseEntity<List<Flashcard>> getFlashcards(@PathVariable Long documentId) {
+        return ResponseEntity.ok(documentService.getFlashcards(documentId));
     }
 }
