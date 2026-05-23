@@ -60,20 +60,13 @@ public class UserJpa extends TenantAwareJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    // ========================================================
-    // NUEVOS CAMPOS AGREGADOS PARA TU PARTE (UI #11, #12, #15)
-    // ========================================================
-    @Column(name = "streak", nullable = false)
-    private Integer streak = 0;
-
-    @Column(name = "points", nullable = false)
-    private Integer points = 0;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "institution_id", insertable = false, updatable = false)
+    private InstitutionJpa institution;
 
     @PrePersist
     void onCreate() {
         if (createdAt == null) createdAt = Instant.now();
-        if (streak == null) streak = 0;
-        if (points == null) points = 0;
     }
 
     @ElementCollection(targetClass = Badge.class, fetch = FetchType.LAZY)
@@ -115,4 +108,6 @@ public class UserJpa extends TenantAwareJpaEntity {
 
     public Set<Badge> getBadges() { return badges; }
     public void setBadges(Set<Badge> badges) { this.badges = badges; }
+
+    public InstitutionJpa getInstitution() { return institution; }
 }
