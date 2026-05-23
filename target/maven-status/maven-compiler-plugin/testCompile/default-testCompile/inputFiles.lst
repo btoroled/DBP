@@ -1,1 +1,9 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/StreakStudyApplicationTests.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/AuthServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/CourseServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/InstitutionServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/MultiTenancyIsolationTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/JwtServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/SecurityConfigTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/tenancy/TenantContextTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/HealthControllerTest.java

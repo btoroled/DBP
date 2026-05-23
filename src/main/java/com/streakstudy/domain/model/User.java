@@ -1,7 +1,6 @@
 package com.streakstudy.domain.model;
 
 import com.streakstudy.domain.exception.BadgeAlreadyOwnedException;
-import com.streakstudy.domain.exception.DomainException;
 import com.streakstudy.domain.exception.InsufficientXpException;
 import com.streakstudy.domain.exception.MaxStreakFreezesReachedException;
 
@@ -30,12 +29,6 @@ public final class User implements TenantAware {
     private final LocalDate lastActiveDate;
     private final int streakFreezes;
     private final Set<Badge> badges;
-
-    // ========================================================
-    // NUEVOS CAMPOS AGREGADOS PARA TU PARTE (UI #11, #12, #15)
-    // ========================================================
-    private final Integer streak;
-    private final Integer points;
 
     public User(Long id,
                 Long institutionId,
@@ -195,9 +188,8 @@ public final class User implements TenantAware {
         );
     }
 
-    // NUEVOS MÉTODOS DE ACCESO ESTILO TU GRUPO (SIn "GET")
-    public Integer streak() { return streak; }
-    public Integer points() { return points; }
+    public Integer streak() { return currentStreak; }
+    public Integer points() { return xp; }
 
     @Override
     public boolean equals(Object o) {

@@ -28,4 +28,9 @@ public interface UserJpaRepository extends JpaRepository<UserJpa, Long> {
             "AND u.role = com.streakstudy.domain.model.UserRole.STUDENT " +
             "ORDER BY u.xp DESC")
     List<UserJpa> findTopUsersByXp(@Param("institutionId") Long institutionId, Limit limit);
+
+    @Query("SELECT u FROM UserJpa u WHERE u.institutionId = :institutionId " +
+            "AND u.role = com.streakstudy.domain.model.UserRole.STUDENT " +
+            "ORDER BY u.xp DESC")
+    List<UserJpa> findLeaderboardByInstitutionId(@Param("institutionId") Long institutionId);
 }
