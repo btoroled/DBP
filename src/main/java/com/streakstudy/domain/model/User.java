@@ -54,8 +54,6 @@ public final class User implements TenantAware {
         this.lastActiveDate = lastActiveDate;
         this.streakFreezes = streakFreezes;
         this.badges = badges != null ? Set.copyOf(badges): Set.of();
-        this.streak = currentStreak;
-        this.points = xp;
     }
 
     public static User newStudent(Long institutionId, String email, String passwordHash, String fullName) {
