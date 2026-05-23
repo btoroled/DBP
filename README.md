@@ -26,6 +26,8 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 
 StreakStudy API es el backend de una plataforma educativa gamificada. Cada institución educativa opera como un tenant aislado: sus usuarios y cursos no son visibles desde otros tenants. La autenticación es por JWT y el contexto de tenant se propaga automáticamente en cada request.
 
+Los estudiantes acumulan XP y rachas diarias completando revisiones. Pueden gastar su XP en la tienda para comprar streak freezes y badges. Un job diario reinicia las rachas de los estudiantes inactivos.
+
 ---
 
 ## Arquitectura
@@ -56,8 +58,8 @@ El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
 
 **Capas:**
 - **Domain:** Entidades de negocio puras (sin anotaciones de frameworks).
-- **Application:** Casos de uso (Services) y puertos (interfaces).
-- **Infrastructure:** Implementaciones técnicas: JPA, JWT, BCrypt, controladores REST.
+- **Application:** Casos de uso (Services y UseCases) y puertos (interfaces).
+- **Infrastructure:** Implementaciones técnicas: JPA, JWT, BCrypt, controladores REST, jobs.
 
 ---
 
@@ -72,7 +74,7 @@ El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
 | Build             | Maven 3.9                         |
 | Contenedores      | Docker + Docker Compose           |
 | Tests unitarios   | JUnit 5 + Mockito                 |
-| Tests integración | @DataJpaTest + H2                 |
+| Tests integración | @DataJpaTest + H2 + Testcontainers |
 
 ---
 
@@ -86,28 +88,42 @@ src/main/java/com/streakstudy/
 │   │   ├── User.java
 │   │   ├── Course.java
 │   │   ├── Institution.java
+│   │   ├── Badge.java             # Badge comprable con XP
+│   │   ├── RewardItem.java        # Item de la tienda (streak freeze, badges)
 │   │   ├── UserRole.java          # Enum: STUDENT, TEACHER, INSTITUTION_ADMIN, SUPER_ADMIN
 │   │   └── TenantAware.java       # Interface marker para entidades con tenant
 │   ├── repository/
 │   │   ├── UserRepository.java
 │   │   ├── CourseRepository.java
-│   │   └── InstitutionRepository.java
+│   │   ├── InstitutionRepository.java
+│   │   └── RewardItemRepository.java
 │   └── exception/
 │       ├── DomainException.java
+│       ├── BadgeAlreadyOwnedException.java
 │       ├── EmailAlreadyExistsException.java
 │       ├── EntityNotFoundException.java
+│       ├── InsufficientXpException.java
 │       ├── InvalidCredentialsException.java
+│       ├── MaxStreakFreezesReachedException.java
 │       └── TenantViolationException.java
 ├── application/
 │   ├── dto/                       # Request/Response records
 │   ├── service/
 │   │   ├── AuthService.java
 │   │   ├── CourseService.java
-│   │   └── InstitutionService.java
+│   │   ├── InstitutionService.java
+│   │   ├── LeaderboardService.java
+│   │   ├── RewardItemService.java
+│   │   ├── StoreService.java
+│   │   ├── StreakResetService.java
+│   │   └── UserProgressService.java
 │   └── port/
+│       ├── FinishReviewUseCase.java
+│       ├── GetUserProgressUseCase.java
 │       ├── PasswordHasher.java
 │       └── TokenIssuer.java
 └── infrastructure/
+    ├── job/                       # StreakResetJob (tarea diaria)
     ├── persistence/               # JPA entities, repositories, adapters, mappers
     ├── security/                  # JwtService, JwtAuthenticationFilter, SecurityConfig
     ├── tenancy/                   # TenantContext, TenantAwareJpaEntity, EntityListener
@@ -123,8 +139,10 @@ src/main/java/com/streakstudy/
 | Entidad       | Tenant-Aware | Descripción                                        |
 |---------------|:------------:|----------------------------------------------------|
 | `Institution` | No (raíz)    | Institución educativa (`code`: "utec", "pucp")     |
-| `User`        | Sí           | Usuario con email globalmente único                |
+| `User`        | Sí           | Usuario con XP, racha diaria y badges              |
 | `Course`      | Sí           | Curso perteneciente a una institución              |
+| `Badge`       | No           | Insignia comprable con XP                          |
+| `RewardItem`  | No           | Item del catálogo de la tienda                     |
 
 ### Roles de Usuario
 
@@ -134,6 +152,13 @@ src/main/java/com/streakstudy/
 | `TEACHER`            | Facilitador dentro de una institución  |
 | `INSTITUTION_ADMIN`  | Administrador de la institución        |
 | `SUPER_ADMIN`        | Administrador cross-tenant             |
+
+### Mecánicas de Gamificación
+
+- **XP:** Los estudiantes ganan XP al completar revisiones (`POST /api/users/me/progress/review`).
+- **Racha:** Días consecutivos con al menos una revisión completada. Un job diario reinicia la racha de estudiantes inactivos.
+- **Streak Freeze:** Item comprable que protege la racha ante un día sin actividad.
+- **Badges:** Insignias comprables con XP en la tienda.
 
 ---
 
@@ -220,6 +245,81 @@ POST /api/institutions
 
 ---
 
+### Progreso del Usuario (`/api/users/me/progress`) — Requiere JWT
+
+| Método | Endpoint                           | Descripción                                      |
+|--------|------------------------------------|--------------------------------------------------|
+| GET    | `/api/users/me/progress`           | Obtener XP, racha y badges del usuario actual   |
+| POST   | `/api/users/me/progress/review`    | Registrar finalización de una revisión (STUDENT) |
+
+**Registrar revisión:**
+```json
+POST /api/users/me/progress/review
+Authorization: Bearer <jwt>
+
+{
+  "courseId": 1,
+  "xpEarned": 50
+}
+```
+
+**Respuesta de progreso:**
+```json
+{
+  "userId": 1,
+  "xp": 350,
+  "streak": 5,
+  "streakFreezes": 1,
+  "badges": ["FLAME", "SCHOLAR"]
+}
+```
+
+---
+
+### Tienda (`/api/store`) — Requiere JWT
+
+| Método | Endpoint                  | Descripción                              |
+|--------|---------------------------|------------------------------------------|
+| POST   | `/api/store/streak-freeze` | Comprar un streak freeze con XP          |
+| POST   | `/api/store/badges`        | Comprar un badge con XP (STUDENT)        |
+
+**Comprar badge:**
+```json
+POST /api/store/badges
+Authorization: Bearer <jwt>
+
+{
+  "badgeName": "FLAME"
+}
+```
+
+---
+
+### Catálogo de Recompensas (`/api/rewards`) — Requiere JWT
+
+| Método | Endpoint       | Descripción                           |
+|--------|----------------|---------------------------------------|
+| GET    | `/api/rewards` | Listar todos los items de la tienda   |
+
+---
+
+### Leaderboard (`/api/leaderboard`) — Requiere JWT
+
+| Método | Endpoint            | Descripción                                                      |
+|--------|---------------------|------------------------------------------------------------------|
+| GET    | `/api/leaderboard`  | Ranking de estudiantes del tenant actual, ordenado por XP desc  |
+
+**Respuesta:**
+```json
+[
+  { "id": 3, "fullName": "Ana García",  "streak": 12, "points": 850 },
+  { "id": 1, "fullName": "Juan Pérez",  "streak": 5,  "points": 350 },
+  { "id": 7, "fullName": "Luis Torres", "streak": 2,  "points": 200 }
+]
+```
+
+---
+
 ### Salud (`/api/health`) — Pública
 
 | Método | Endpoint       | Descripción      |
@@ -246,10 +346,13 @@ Todos los errores siguen este formato:
 | 400         | `validation_error`                 | Campos inválidos (con `errors[]`) |
 | 400         | `bad_request`                      | Argumento inválido                |
 | 401         | `invalid_credentials`              | Email o contraseña incorrectos    |
+| 402         | `insufficient_xp`                  | XP insuficiente para comprar      |
 | 403         | `tenant_violation`                 | Acceso a datos de otro tenant     |
 | 404         | `not_found`                        | Recurso no encontrado             |
 | 409         | `email_already_exists`             | Email ya registrado               |
 | 409         | `institution_code_already_exists`  | Código de institución duplicado   |
+| 409         | `badge_already_owned`              | El usuario ya posee ese badge     |
+| 409         | `max_streak_freezes_reached`       | Límite de streak freezes alcanzado|
 
 ---
 
@@ -259,7 +362,7 @@ El aislamiento entre tenants se implementa en múltiples capas:
 
 1. **JWT:** El token lleva el claim `institutionId` del usuario autenticado.
 2. **TenantContext:** Al iniciar cada request, `JwtAuthenticationFilter` extrae el `institutionId` del JWT y lo almacena en un `ThreadLocal`. Se limpia al finalizar el request.
-3. **Services:** Todos los métodos de `CourseService` llaman a `TenantContext.requireInstitutionId()` antes de ejecutar.
+3. **Services:** Todos los métodos de servicios tenant-aware llaman a `TenantContext.requireInstitutionId()` antes de ejecutar.
 4. **Queries JPA:** Todas las consultas de entidades tenant-aware incluyen `institutionId` como parámetro explícito.
 5. **JPA Listener:** `TenantAwareEntityListener` valida en `@PrePersist` y `@PreUpdate` que el `institution_id` de la entidad coincide con el contexto actual. Si hay mismatch, lanza `TenantViolationException`.
 
@@ -353,17 +456,34 @@ JWT_SECRET=mi-secreto-de-al-menos-32-caracteres-aqui \
 
 ### Cobertura de Tests
 
-| Test                          | Tipo        | Qué verifica                                   |
-|-------------------------------|-------------|------------------------------------------------|
-| `AuthServiceTest`             | Unitario    | Registro, login, manejo de errores             |
-| `CourseServiceTest`           | Unitario    | CRUD de cursos con tenant mock                 |
-| `InstitutionServiceTest`      | Unitario    | Creación de instituciones, código duplicado    |
-| `MultiTenancyIsolationTest`   | Integración | Aislamiento real entre tenants (H2)            |
-| `JwtServiceTest`              | Unitario    | Emisión y parsing de tokens JWT                |
-| `SecurityConfigTest`          | Integración | Endpoints públicos vs protegidos               |
-| `TenantContextTest`           | Unitario    | ThreadLocal lifecycle, cross-tenant mode       |
-| `HealthControllerTest`        | Integración | Health endpoint                                |
-| `StreakStudyApplicationTests` | Integración | Carga del contexto Spring completo             |
+| Test                                    | Tipo           | Qué verifica                                        |
+|-----------------------------------------|----------------|-----------------------------------------------------|
+| `AuthServiceTest`                       | Unitario       | Registro, login, manejo de errores                  |
+| `CourseServiceTest`                     | Unitario       | CRUD de cursos con tenant mock                      |
+| `CourseServicePostgresContainerTest`    | Integración    | CRUD de cursos contra PostgreSQL real               |
+| `InstitutionServiceTest`                | Unitario       | Creación de instituciones, código duplicado         |
+| `LeaderboardServiceTest`                | Unitario       | Ranking filtrado por tenant                         |
+| `RewardItemServiceTest`                 | Unitario       | Catálogo de items de la tienda                      |
+| `StoreServiceTest`                      | Unitario       | Compra de streak freezes y badges, validaciones XP  |
+| `StreakResetServiceTest`                | Unitario       | Reset de rachas de usuarios inactivos               |
+| `UserProgressServiceTest`               | Unitario       | Registro de revisiones, acumulación de XP y racha   |
+| `CourseRepositoryAdapterTest`           | Integración    | Consultas JPA de cursos (H2)                        |
+| `InstitutionRepositoryAdapterTest`      | Integración    | Consultas JPA de instituciones (H2)                 |
+| `RewardItemRepositoryAdapterTest`       | Integración    | Consultas JPA de items de tienda (H2)               |
+| `UserRepositoryAdapterTest`             | Integración    | Consultas JPA de usuarios (H2)                      |
+| `UserRepositoryAdapterPostgresContainerTest` | Integración | Consultas JPA de usuarios contra PostgreSQL real   |
+| `MultiTenancyIsolationTest`             | Integración    | Aislamiento real entre tenants (H2)                 |
+| `JwtServiceTest`                        | Unitario       | Emisión y parsing de tokens JWT                     |
+| `SecurityConfigTest`                    | Integración    | Endpoints públicos vs protegidos                    |
+| `TenantContextTest`                     | Unitario       | ThreadLocal lifecycle, cross-tenant mode            |
+| `AuthControllerTest`                    | Integración    | Endpoints de autenticación (MockMvc)                |
+| `CourseControllerTest`                  | Integración    | Endpoints de cursos (MockMvc)                       |
+| `InstitutionControllerTest`             | Integración    | Endpoints de instituciones (MockMvc)                |
+| `LeaderboardControllerTest`             | Integración    | Endpoint de leaderboard (MockMvc)                   |
+| `RewardItemControllerTest`              | Integración    | Endpoint de catálogo de recompensas (MockMvc)       |
+| `UserProgressControllerTest`            | Integración    | Endpoints de progreso de usuario (MockMvc)          |
+| `HealthControllerTest`                  | Integración    | Health endpoint                                     |
+| `StreakStudyApplicationTests`           | Integración    | Carga del contexto Spring completo                  |
 
 ---
 
