@@ -61,11 +61,15 @@ class AuthServiceTest {
         });
         when(tokens.issue(any(User.class))).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
+        when(refreshTokens.create(any(User.class))).thenReturn(
+            new RefreshTokenService.RefreshTokenGrant("refresh-token", Instant.now().plusSeconds(3600))
+        );
 
         AuthResponse resp = service.register(req);
 
-        assertThat(resp.token()).isEqualTo("jwt-token");
-        assertThat(resp.expiresInSeconds()).isEqualTo(3600L);
+        assertThat(resp.accessToken()).isEqualTo("jwt-token");
+        assertThat(resp.refreshToken()).isEqualTo("refresh-token");
+        assertThat(resp.expiresIn()).isEqualTo(3600L);
         assertThat(resp.institutionId()).isEqualTo(1L);
         assertThat(resp.email()).isEqualTo("alice@utec.edu"); // normalizado
         assertThat(resp.role()).isEqualTo(UserRole.STUDENT);
@@ -106,10 +110,14 @@ class AuthServiceTest {
         when(hasher.matches("Password123", "HASHED")).thenReturn(true);
         when(tokens.issue(existing)).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
+        when(refreshTokens.create(existing)).thenReturn(
+            new RefreshTokenService.RefreshTokenGrant("refresh-token", Instant.now().plusSeconds(3600))
+        );
 
         AuthResponse resp = service.login(new LoginRequest("Alice@utec.edu", "Password123"));
 
-        assertThat(resp.token()).isEqualTo("jwt-token");
+        assertThat(resp.accessToken()).isEqualTo("jwt-token");
+        assertThat(resp.refreshToken()).isEqualTo("refresh-token");
         assertThat(resp.institutionId()).isEqualTo(1L);
         verify(tokens).issue(existing);
     }

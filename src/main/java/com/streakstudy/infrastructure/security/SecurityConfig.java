@@ -43,9 +43,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final JwtUserDetailsService jwtUserDetailsService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter,
+                          JwtUserDetailsService jwtUserDetailsService) {
         this.jwtFilter = jwtFilter;
+        this.jwtUserDetailsService = jwtUserDetailsService;
     }
 
     @Bean
@@ -69,6 +72,7 @@ public class SecurityConfig {
             )
             .httpBasic(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
+            .userDetailsService(jwtUserDetailsService)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
