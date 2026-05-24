@@ -1,4 +1,5 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/StreakStudyApplicationTests.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/AuthServiceEventTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/AuthServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/CourseServicePostgresContainerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/CourseServiceTest.java
@@ -7,9 +8,14 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/InstitutionServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/LeaderboardServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/RewardItemServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StoreServiceEventTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StoreServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StreakResetServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/UserProgressServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailIntegrationTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailTemplateRendererTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/JavaMailEmailSenderAdapterTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/event/WelcomeEmailListenerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/CourseRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/InstitutionRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/MultiTenancyIsolationTest.java

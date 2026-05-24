@@ -23,9 +23,13 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/UpdateFlashcardRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/UserProgressResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/BadgeEarnedEvent.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/FlashcardsGeneratedEvent.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/UserRegisteredEvent.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/AiFlashcardGeneratorPort.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/DocumentProcessingPort.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/EmailSenderPort.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/FinishReviewUseCase.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/GetUserProgressUseCase.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/PasswordHasher.java
@@ -83,6 +87,12 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/PdfBoxTextExtractorAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/AsyncConfig.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/package-info.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/EmailProperties.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/EmailTemplateRenderer.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/JavaMailEmailSenderAdapter.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/BadgeEarnedEmailListener.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/FlashcardsReadyEmailListener.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/WelcomeEmailListener.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/job/StreakResetJob.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/adapter/AiGenerationJobRepositoryAdapter.java
