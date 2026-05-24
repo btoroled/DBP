@@ -1,5 +1,6 @@
 package com.streakstudy.application.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +8,7 @@ import com.streakstudy.application.dto.AuthResponse;
 import com.streakstudy.application.dto.LoginRequest;
 import com.streakstudy.application.dto.RefreshTokenRequest;
 import com.streakstudy.application.dto.RegisterRequest;
+import com.streakstudy.application.event.UserRegisteredEvent;
 import com.streakstudy.application.port.PasswordHasher;
 import com.streakstudy.application.port.TokenIssuer;
 import com.streakstudy.domain.exception.InvalidRefreshTokenException;
@@ -35,18 +37,18 @@ public class AuthService {
     private final InstitutionRepository institutions;
     private final PasswordHasher passwordHasher;
     private final TokenIssuer tokenIssuer;
-    private final RefreshTokenService refreshTokenService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AuthService(UserRepository users,
                        InstitutionRepository institutions,
                        PasswordHasher passwordHasher,
                        TokenIssuer tokenIssuer,
-                       RefreshTokenService refreshTokenService) {
+                       ApplicationEventPublisher eventPublisher) {
         this.users = users;
         this.institutions = institutions;
         this.passwordHasher = passwordHasher;
         this.tokenIssuer = tokenIssuer;
-        this.refreshTokenService = refreshTokenService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -69,7 +71,10 @@ public class AuthService {
         );
         User saved = users.save(toSave);
 
-        return issueTokens(saved);
+        eventPublisher.publishEvent(new UserRegisteredEvent(
+                saved.id(), saved.institutionId(), saved.email(), saved.fullName()));
+
+        return AuthResponse.of(tokenIssuer.issue(saved), tokenIssuer.expirationSeconds(), saved);
     }
 
     @Transactional(readOnly = true)

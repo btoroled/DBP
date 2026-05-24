@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.streakstudy.application.dto.AuthResponse;
 import com.streakstudy.application.dto.LoginRequest;
@@ -42,7 +43,7 @@ class AuthServiceTest {
     @Mock InstitutionRepository institutions;
     @Mock PasswordHasher hasher;
     @Mock TokenIssuer tokens;
-    @Mock RefreshTokenService refreshTokens;
+    @Mock ApplicationEventPublisher events;
 
     @InjectMocks AuthService service;
 

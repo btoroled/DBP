@@ -18,7 +18,7 @@ import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping({"/api/auth", "/api/v1/auth"})
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final AuthService authService;

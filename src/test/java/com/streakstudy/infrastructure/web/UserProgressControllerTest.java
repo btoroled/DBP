@@ -65,7 +65,7 @@ class UserProgressControllerTest {
         FinishReviewRequest request = new FinishReviewRequest(12, 20);
         doNothing().when(finishReviewUseCase).execute(10L, request);
 
-        mockMvc.perform(post("/api/users/me/progress/review")
+        mockMvc.perform(post("/api/v1/users/me/progress/review")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk());
@@ -77,7 +77,7 @@ class UserProgressControllerTest {
     void shouldReturn400WhenFinishReviewBodyIsInvalid() throws Exception {
         FinishReviewRequest request = new FinishReviewRequest(0, -1);
 
-        mockMvc.perform(post("/api/users/me/progress/review")
+        mockMvc.perform(post("/api/v1/users/me/progress/review")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
@@ -89,7 +89,7 @@ class UserProgressControllerTest {
         when(getUserProgressUseCase.execute(10L))
             .thenReturn(new UserProgressResponse(14, 3, 1, Set.of("STREAK_STARTER")));
 
-        mockMvc.perform(get("/api/users/me/progress"))
+        mockMvc.perform(get("/api/v1/users/me/progress"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.xp").value(14))
             .andExpect(jsonPath("$.currentStreak").value(3))

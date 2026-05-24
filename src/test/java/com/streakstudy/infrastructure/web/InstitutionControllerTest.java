@@ -41,7 +41,7 @@ class InstitutionControllerTest {
         InstitutionResponse response = new InstitutionResponse(1L, "UTEC", "utec", true, Instant.now());
         when(institutionService.create(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/institutions")
+        mockMvc.perform(post("/api/v1/institutions")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -54,7 +54,7 @@ class InstitutionControllerTest {
         InstitutionResponse response = new InstitutionResponse(2L, "PUCP", "pucp", true, Instant.now());
         when(institutionService.getById(2L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/institutions/2"))
+        mockMvc.perform(get("/api/v1/institutions/2"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("PUCP"));
     }
@@ -63,7 +63,7 @@ class InstitutionControllerTest {
     void shouldReturnBadRequestWhenCreateBodyIsInvalid() throws Exception {
         InstitutionRequest request = new InstitutionRequest("", "");
 
-        mockMvc.perform(post("/api/institutions")
+        mockMvc.perform(post("/api/v1/institutions")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())

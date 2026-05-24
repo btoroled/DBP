@@ -11,7 +11,7 @@ import com.streakstudy.application.dto.RewardItemResponse;
 import com.streakstudy.application.service.RewardItemService;
 
 @RestController
-@RequestMapping("/api/rewards")
+@RequestMapping("/api/v1/rewards")
 public class RewardItemController {
 
     private final RewardItemService rewardItemService;

@@ -45,7 +45,7 @@ class AuthControllerTest {
         AuthResponse response = new AuthResponse("jwt-token", "refresh-token", 900L, 10L, 1L, "alice@test.com", UserRole.STUDENT, 0);
         when(authService.register(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -61,7 +61,7 @@ class AuthControllerTest {
         AuthResponse response = new AuthResponse("jwt-token", "refresh-token", 900L, 10L, 1L, "alice@test.com", UserRole.STUDENT, 7);
         when(authService.login(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -108,7 +108,7 @@ class AuthControllerTest {
     void shouldReturn400WhenRegisterBodyIsInvalid() throws Exception {
         RegisterRequest request = new RegisterRequest(null, "correo-invalido", "123", "");
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())

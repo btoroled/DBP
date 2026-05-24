@@ -16,8 +16,6 @@ public record CreateFlashcardRequest(
         @NotBlank
         String answer,
 
-        @NotBlank
-        @Size(max = 1000)
         @NotNull
         Difficulty difficulty
 ) {}
