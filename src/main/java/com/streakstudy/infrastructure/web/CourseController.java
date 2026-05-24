@@ -19,7 +19,7 @@ import com.streakstudy.application.service.CourseService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/courses")
+@RequestMapping("/api/v1/courses")
 public class CourseController {
 
     private final CourseService service;

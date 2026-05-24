@@ -37,7 +37,7 @@ class RewardItemControllerTest {
             new RewardItemResponse(2L, "Libre", "Dia libre", 50, 1)
         ));
 
-        mockMvc.perform(get("/api/rewards"))
+        mockMvc.perform(get("/api/v1/rewards"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].title").value("Cupon"))
             .andExpect(jsonPath("$[1].costInPoints").value(50));

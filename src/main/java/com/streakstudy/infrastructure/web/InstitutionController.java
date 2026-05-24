@@ -16,7 +16,7 @@ import com.streakstudy.application.service.InstitutionService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/institutions")
+@RequestMapping("/api/v1/institutions")
 public class InstitutionController {
 
     private final InstitutionService service;

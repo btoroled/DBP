@@ -1,23 +1,30 @@
 package com.streakstudy.infrastructure.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.streakstudy.application.dto.CreateFlashcardRequest;
-import com.streakstudy.application.service.FlashcardService;
-import com.streakstudy.domain.model.Difficulty;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.streakstudy.application.dto.CreateFlashcardRequest;
+import com.streakstudy.application.dto.FlashcardResponse;
+import com.streakstudy.application.service.FlashcardService;
+import com.streakstudy.domain.model.Difficulty;
+import com.streakstudy.infrastructure.security.JwtAuthenticationFilter;
+import com.streakstudy.infrastructure.web.advice.GlobalExceptionHandler;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(FlashcardController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class FlashcardControllerTest {
 
     @Autowired
@@ -26,21 +33,32 @@ class FlashcardControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private FlashcardService flashcardService;
 
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Test
-    @WithMockUser(username = "alumno@utec.edu.pe", roles = {"STUDENT"})
     void shouldCreateFlashcardSuccessfully() throws Exception {
-        // Preparar el request DTO usando la dificultad correcta
         CreateFlashcardRequest request = new CreateFlashcardRequest(
-                1L, // deckId
-                "¿Qué es la inyección de dependencias?", // question
-                "Un patrón de diseño de software...", // answer
-                Difficulty.MEDIUM // enum asignado
+                1L,
+                "¿Qué es la inyección de dependencias?",
+                "Un patrón de diseño de software...",
+                Difficulty.MEDIUM
         );
 
-        mockMvc.perform(post("/api/v1/decks/1/flashcards")
+        when(flashcardService.create(any(CreateFlashcardRequest.class)))
+                .thenReturn(new FlashcardResponse(
+                        99L,
+                        1L,
+                        "¿Qué es la inyección de dependencias?",
+                        "Un patrón de diseño de software...",
+                        Instant.now(),
+                        Difficulty.MEDIUM
+                ));
+
+        mockMvc.perform(post("/api/v1/flashcards")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());

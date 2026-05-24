@@ -61,7 +61,7 @@ class StoreControllerTest {
     void shouldReturn200WhenBuyingStreakFreezeSucceeds() throws Exception {
         doNothing().when(storeService).buyStreakFreeze(10L);
 
-        mockMvc.perform(post("/api/store/streak-freeze"))
+        mockMvc.perform(post("/api/v1/store/streak-freeze"))
             .andExpect(status().isOk());
 
         verify(storeService).buyStreakFreeze(10L);
@@ -71,7 +71,7 @@ class StoreControllerTest {
     void shouldReturn400WhenBuyingStreakFreezeWithoutEnoughXp() throws Exception {
         doThrow(new InsufficientXpException()).when(storeService).buyStreakFreeze(10L);
 
-        mockMvc.perform(post("/api/store/streak-freeze"))
+        mockMvc.perform(post("/api/v1/store/streak-freeze"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("insufficient_xp"));
     }
@@ -80,7 +80,7 @@ class StoreControllerTest {
     void shouldReturn400WhenMaxStreakFreezesReached() throws Exception {
         doThrow(new MaxStreakFreezesReachedException()).when(storeService).buyStreakFreeze(10L);
 
-        mockMvc.perform(post("/api/store/streak-freeze"))
+        mockMvc.perform(post("/api/v1/store/streak-freeze"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("max_streak_freezes_reached"));
     }
@@ -89,7 +89,7 @@ class StoreControllerTest {
     void shouldReturn200WhenBuyingBadgeSucceeds() throws Exception {
         doNothing().when(storeService).buyBadge(10L, Badge.STREAK_STARTER);
 
-        mockMvc.perform(post("/api/store/badges")
+        mockMvc.perform(post("/api/v1/store/badges")
                 .contentType(APPLICATION_JSON)
                 .content("{\"badgeName\":\"STREAK_STARTER\"}"))
             .andExpect(status().isOk());
@@ -99,7 +99,7 @@ class StoreControllerTest {
 
     @Test
     void shouldReturn400WhenBadgeBodyIsInvalid() throws Exception {
-        mockMvc.perform(post("/api/store/badges")
+        mockMvc.perform(post("/api/v1/store/badges")
                 .contentType(APPLICATION_JSON)
                 .content("{\"badgeName\":null}"))
             .andExpect(status().isBadRequest())
@@ -110,7 +110,7 @@ class StoreControllerTest {
     void shouldReturn400WhenBuyingBadgeWithoutEnoughXp() throws Exception {
         doThrow(new InsufficientXpException()).when(storeService).buyBadge(10L, Badge.STREAK_STARTER);
 
-        mockMvc.perform(post("/api/store/badges")
+        mockMvc.perform(post("/api/v1/store/badges")
                 .contentType(APPLICATION_JSON)
                 .content("{\"badgeName\":\"STREAK_STARTER\"}"))
             .andExpect(status().isBadRequest())
@@ -122,7 +122,7 @@ class StoreControllerTest {
         doThrow(new BadgeAlreadyOwnedException("STREAK_STARTER"))
             .when(storeService).buyBadge(10L, Badge.STREAK_STARTER);
 
-        mockMvc.perform(post("/api/store/badges")
+        mockMvc.perform(post("/api/v1/store/badges")
                 .contentType(APPLICATION_JSON)
                 .content("{\"badgeName\":\"STREAK_STARTER\"}"))
             .andExpect(status().isConflict())

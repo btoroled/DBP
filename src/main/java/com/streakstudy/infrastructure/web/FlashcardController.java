@@ -16,7 +16,7 @@ import com.streakstudy.application.service.FlashcardService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/flashcards")
+@RequestMapping("/api/v1/flashcards")
 @Validated
 public class FlashcardController {
 

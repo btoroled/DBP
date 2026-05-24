@@ -12,7 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users/me/progress")
+@RequestMapping("/api/v1/users/me/progress")
 public class UserProgressController {
     private final FinishReviewUseCase finishReviewUseCase;
     private final GetUserProgressUseCase getUserProgressUseCase;
