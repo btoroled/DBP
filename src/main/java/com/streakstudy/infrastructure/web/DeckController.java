@@ -14,7 +14,7 @@ import com.streakstudy.application.service.DeckService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/decks")
+@RequestMapping("/api/v1/decks")
 @Validated
 public class DeckController {
 

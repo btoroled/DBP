@@ -44,7 +44,7 @@ class CourseControllerTest {
         CourseResponse response = new CourseResponse(1L, 7L, "Calculo", "desc", Instant.now());
         when(courseService.create(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/courses")
+        mockMvc.perform(post("/api/v1/courses")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -60,7 +60,7 @@ class CourseControllerTest {
             new CourseResponse(2L, 7L, "Algebra", "desc", Instant.now())
         ));
 
-        mockMvc.perform(get("/api/courses"))
+        mockMvc.perform(get("/api/v1/courses"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("Calculo"))
             .andExpect(jsonPath("$[1].name").value("Algebra"));
@@ -70,7 +70,7 @@ class CourseControllerTest {
     void shouldReturn204WhenDeletingCourse() throws Exception {
         doNothing().when(courseService).deleteByIdForCurrentTenant(5L);
 
-        mockMvc.perform(delete("/api/courses/5"))
+        mockMvc.perform(delete("/api/v1/courses/5"))
             .andExpect(status().isNoContent());
     }
 
@@ -78,7 +78,7 @@ class CourseControllerTest {
     void shouldReturn400WhenCreateBodyIsInvalid() throws Exception {
         CreateCourseRequest request = new CreateCourseRequest("", "x".repeat(2100));
 
-        mockMvc.perform(post("/api/courses")
+        mockMvc.perform(post("/api/v1/courses")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())

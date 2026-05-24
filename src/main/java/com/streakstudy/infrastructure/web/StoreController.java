@@ -10,7 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/store")
+@RequestMapping("/api/v1/store")
 public class StoreController {
 
     private final StoreService storeService;

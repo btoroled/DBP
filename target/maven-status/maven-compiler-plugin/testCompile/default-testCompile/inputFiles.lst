@@ -17,6 +17,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/UserRepositoryAdapterPostgresContainerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/UserRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/JwtServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/SecurityConfigCorsTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/SecurityConfigTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/tenancy/TenantContextTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/AuthControllerTest.java
@@ -27,3 +28,4 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/RewardItemControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/StoreControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/UserProgressControllerTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/advice/GlobalExceptionHandlerTest.java

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.streakstudy.application.service.StreakResetService;
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/api/v1/test")
 @PreAuthorize("hasAuthority('STUDENT')")
 public class TestStreakController {
 
