@@ -5,6 +5,7 @@ import java.util.List;
 import com.streakstudy.application.dto.FlashcardDetailResponse;
 import com.streakstudy.application.dto.UpdateFlashcardRequest;
 import com.streakstudy.domain.repository.DeckRepository;
+import com.streakstudy.domain.model.Difficulty; // ¡IMPORTANTE: Importamos el Enum del dominio!
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,12 +45,14 @@ public class FlashcardService {
                 )
         );
 
+        // Cambia req.getDifficulty() por esto:
+        Difficulty difficultyEnum = req.difficulty();
         Flashcard flashcard = Flashcard.newInstance(
                 tenantId,
                 req.deckId(),
                 req.question(),
                 req.answer(),
-                req.difficulty()
+                difficultyEnum // Ahora sí le pasamos el tipo de dato requerido
         );
 
         return FlashcardResponse.from(
@@ -99,10 +102,13 @@ public class FlashcardService {
                         )
                 );
 
+        // CONVERSIÓN EN UPDATE: También nos aseguramos de transformar la dificultad aquí
+        // Nota: Si tus DTOs usan records cambias req.getDifficulty() por req.difficulty()
+        Difficulty difficultyEnum = req.getDifficulty();
         flashcard.update(
                 req.getQuestion(),
                 req.getAnswer(),
-                req.getDifficulty()
+                difficultyEnum
         );
 
         return FlashcardResponse.from(
