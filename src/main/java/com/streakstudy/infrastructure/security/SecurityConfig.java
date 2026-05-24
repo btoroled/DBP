@@ -20,7 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * <ul>
  *   <li>{@code /actuator/health/**}, {@code /actuator/info}</li>
  *   <li>{@code /api/health}</li>
- *   <li>{@code /api/auth/**} (register, login)</li>
+ *   <li>{@code /api/auth/register}, {@code /api/auth/login}, {@code /api/auth/refresh}
+ *       y sus aliases en {@code /api/v1/auth/**}</li>
  *   <li>{@code POST /api/institutions} y {@code GET /api/institutions/**}
  *       — cross-tenant (en produccion deberian limitarse a SUPER_ADMIN).</li>
  * </ul>
@@ -34,9 +35,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final JwtUserDetailsService jwtUserDetailsService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter,
+                          JwtUserDetailsService jwtUserDetailsService) {
         this.jwtFilter = jwtFilter;
+        this.jwtUserDetailsService = jwtUserDetailsService;
     }
 
     @Bean
@@ -50,7 +54,14 @@ public class SecurityConfig {
                     "/actuator/info",
                     "/api/health"
                 ).permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/refresh",
+                    "/api/v1/auth/register",
+                    "/api/v1/auth/login",
+                    "/api/v1/auth/refresh"
+                ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/institutions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/institutions/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/users/me/progress/review").hasAuthority("STUDENT")
@@ -58,6 +69,7 @@ public class SecurityConfig {
             )
             .httpBasic(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
+            .userDetailsService(jwtUserDetailsService)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

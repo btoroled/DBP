@@ -40,6 +40,21 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.UNAUTHORIZED, "invalid_credentials", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<Map<String, Object>> invalidRefreshToken(InvalidRefreshTokenException ex) {
+        return body(HttpStatus.UNAUTHORIZED, "invalid_refresh_token", ex.getMessage());
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<Map<String, Object>> refreshExpired(RefreshTokenExpiredException ex) {
+        return body(HttpStatus.UNAUTHORIZED, "refresh_token_expired", ex.getMessage());
+    }
+
+    @ExceptionHandler(RefreshTokenRevokedException.class)
+    public ResponseEntity<Map<String, Object>> refreshRevoked(RefreshTokenRevokedException ex) {
+        return body(HttpStatus.UNAUTHORIZED, "refresh_token_revoked", ex.getMessage());
+    }
+
     @ExceptionHandler(TenantViolationException.class)
     public ResponseEntity<Map<String, Object>> tenantViolation(TenantViolationException ex) {
         // Devolvemos 403 para que sea visible que es un problema de aislamiento

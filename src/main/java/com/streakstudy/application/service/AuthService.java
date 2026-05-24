@@ -5,9 +5,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.streakstudy.application.dto.AuthResponse;
 import com.streakstudy.application.dto.LoginRequest;
+import com.streakstudy.application.dto.RefreshTokenRequest;
 import com.streakstudy.application.dto.RegisterRequest;
 import com.streakstudy.application.port.PasswordHasher;
 import com.streakstudy.application.port.TokenIssuer;
+import com.streakstudy.domain.exception.InvalidRefreshTokenException;
 import com.streakstudy.domain.exception.EmailAlreadyExistsException;
 import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.exception.InvalidCredentialsException;
@@ -33,15 +35,18 @@ public class AuthService {
     private final InstitutionRepository institutions;
     private final PasswordHasher passwordHasher;
     private final TokenIssuer tokenIssuer;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(UserRepository users,
                        InstitutionRepository institutions,
                        PasswordHasher passwordHasher,
-                       TokenIssuer tokenIssuer) {
+                       TokenIssuer tokenIssuer,
+                       RefreshTokenService refreshTokenService) {
         this.users = users;
         this.institutions = institutions;
         this.passwordHasher = passwordHasher;
         this.tokenIssuer = tokenIssuer;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -64,7 +69,7 @@ public class AuthService {
         );
         User saved = users.save(toSave);
 
-        return AuthResponse.of(tokenIssuer.issue(saved), tokenIssuer.expirationSeconds(), saved);
+        return issueTokens(saved);
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +81,36 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        return AuthResponse.of(tokenIssuer.issue(user), tokenIssuer.expirationSeconds(), user);
+        return issueTokens(user);
+    }
+
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest req) {
+        RefreshTokenService.RefreshTokenRotation rotation = refreshTokenService.rotate(req.refreshToken());
+        return AuthResponse.of(
+            tokenIssuer.issue(rotation.user()),
+            rotation.refreshToken(),
+            tokenIssuer.expirationSeconds(),
+            rotation.user()
+        );
+    }
+
+    @Transactional
+    public void logout(Long userId, RefreshTokenRequest req) {
+        RefreshTokenService.RefreshTokenSession session = refreshTokenService.validate(req.refreshToken());
+        if (!session.userId().equals(userId)) {
+            throw new InvalidRefreshTokenException();
+        }
+        refreshTokenService.revoke(req.refreshToken());
+    }
+
+    private AuthResponse issueTokens(User user) {
+        RefreshTokenService.RefreshTokenGrant refreshToken = refreshTokenService.create(user);
+        return AuthResponse.of(
+            tokenIssuer.issue(user),
+            refreshToken.token(),
+            tokenIssuer.expirationSeconds(),
+            user
+        );
     }
 }

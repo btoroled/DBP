@@ -281,6 +281,36 @@ POST /api/auth/login
 }
 ```
 
+**Refresh tokens (nuevo flujo):**
+```json
+POST /api/v1/auth/login
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "0b9f...c7a",
+  "expiresIn": 900,
+  "userId": 1,
+  "institutionId": 1,
+  "email": "alumno@utec.edu.pe",
+  "role": "STUDENT",
+  "xp": 0
+}
+```
+
+```json
+POST /api/v1/auth/refresh
+{
+  "refreshToken": "0b9f...c7a"
+}
+```
+
+```json
+POST /api/v1/auth/logout
+Authorization: Bearer <accessToken>
+{
+  "refreshToken": "0b9f...c7a"
+}
+```
+
 ---
 
 ### Documentos PDF y Flashcards IA (`/api/documents`) — Requiere JWT
