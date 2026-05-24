@@ -4,6 +4,8 @@
 > de la **rúbrica CS 2031 (Semana 9/10)**. Cada sección es un issue completo
 > y autocontenido, listo para copiarse a GitHub.
 >
+> **Numerados en el orden de mergeo sugerido.**
+>
 > **Punto de partida estimado:** ~15-16 / 20
 > **Punto objetivo tras ejecutar los 9 core:** ~19-20 / 20
 > **Esfuerzo total:** 5-7 días-persona
@@ -14,226 +16,22 @@
 
 | # | Issue | Rúbrica | Pts en juego | Esfuerzo | Estado |
 |---|---|---|---|---|---|
-| 1 | ~~Sistema de eventos + email~~ | 8.1 + 8.3 | ~1.5 | 1-2 días | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
-| 2 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | ✅ implementado |
-| 3 | ~~GitHub Actions CI~~ | §10 + bonus | ~0.3 | 3h | ✅ mergeado [#40](https://github.com/btoroled/DBP/pull/40) |
-| 4 | ~~API hardening (/v1, CORS, path, HMNR)~~ | 5.2, 6.1, 7.1 | ~0.6 | 4h | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
-| 5 | Swagger/OpenAPI | Bonus | ~0.3 | 2h | _por crear_ |
-| 6 | Refresh tokens + UserDetailsService | 6.2 | ~0.3 | 4h | _por crear_ |
-| 7 | @PreAuthorize + validaciones DTO | 1.3, 6.3 | ~0.5 | 4h | _por crear_ |
+| 1 | ~~GitHub Actions CI~~ | §10 + bonus | ~0.3 | 3h | ✅ mergeado [#40](https://github.com/btoroled/DBP/pull/40) |
+| 2 | ~~API hardening (/v1, CORS, path, HMNR)~~ | 5.2, 6.1, 7.1 | ~0.6 | 4h | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
+| 3 | Refresh tokens + UserDetailsService | 6.2 | ~0.3 | 4h | ✅ implementado |
+| 4 | ~~Sistema de eventos + email~~ | 8.1 + 8.3 | ~1.5 | 1-2 días | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
+| 5 | Password reset por email | Extensión §6.2 + §8.3 | ~0.2 (bonus) | 4-6h | _por crear_ |
+| 6 | @PreAuthorize + validaciones DTO | 1.3, 6.3 | ~0.5 | 4h | _por crear_ |
+| 7 | Swagger/OpenAPI | Bonus | ~0.3 | 2h | _por crear_ |
 | 8 | Tests faltantes (Deck, Flashcard, Doc, Job) | 4.1, 4.2, 4.4 | ~0.8 | 1 día | _por crear_ |
-| 9 | Logging SLF4J + cleanup + README final | 10.1 + bonus | ~0.2 | 2h | _por crear_ |
-| 10 | Password reset por email | Extensión §6.2 + §8.3 | ~0.2 (bonus) | 4-6h | _por crear_ |
+| 9 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | ✅ implementado |
+| 10 | Logging SLF4J + cleanup + README final | 10.1 + bonus | ~0.2 | 2h | _por crear_ |
 
-**Orden de mergeo sugerido:** ~~#3~~ → ~~#4~~ → #6 → ~~#1~~ → #10 → #7 → #5 → #8 → ~~#2~~ → #9
-
----
-
-## Issue 1 — feat: Sistema de eventos asíncronos + servicio de email transaccional
-
-> **Spec-driven** · Cubre rúbrica §8.1 (Eventos), §8.3 (Email) y refuerza §8.2 (Asincronía).
-
-### 1. Context
-StreakStudy hoy no tiene `ApplicationEvent`s ni servicio de correo. La rúbrica exige eventos en **más de 2 casos de uso** (§8.1, 1.0 pto) y servicio de email con plantillas (§8.3, 0.5 pto). Sin esto perdemos ~1.5 pts.
-
-### 2. Problem
-Side-effects acoplados a lógica de negocio en `AuthService.register`, `DocumentProcessingService.generateFlashcards` y `StoreService.buyBadge`. Sin canal para notificar al usuario.
-
-### 3. Goals
-- **G1** Eventos: `UserRegisteredEvent`, `FlashcardsGeneratedEvent`, `BadgeEarnedEvent`.
-- **G2** Listeners con `@TransactionalEventListener(AFTER_COMMIT)` + `@Async("emailExecutor")`.
-- **G3** `EmailSenderPort` + `JavaMailEmailSenderAdapter` con plantillas Thymeleaf HTML.
-- **G4** Modo `MAIL_ENABLED=false` para CI/tests (log-only).
-- **G5** Tests con `@RecordApplicationEvents` y GreenMail.
-
-### 4. Non-goals
-- i18n de plantillas, retries SMTP, cola persistente, tracking de aperturas.
-
-### 5. Specification
-
-#### 5.1 Paquetes nuevos
-```
-application/event/{UserRegisteredEvent,FlashcardsGeneratedEvent,BadgeEarnedEvent}.java
-application/port/EmailSenderPort.java
-infrastructure/email/{JavaMailEmailSenderAdapter,EmailProperties,EmailTemplateRenderer}.java
-infrastructure/event/listener/{Welcome,FlashcardsReady,BadgeEarned}EmailListener.java
-resources/templates/email/{welcome,flashcards-ready,badge-earned}.html
-```
-
-#### 5.2 Dependencias (pom.xml)
-```xml
-<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-mail</artifactId></dependency>
-<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-thymeleaf</artifactId></dependency>
-<dependency><groupId>com.icegreen</groupId><artifactId>greenmail-junit5</artifactId><version>2.0.1</version><scope>test</scope></dependency>
-```
-
-#### 5.3 ThreadPoolTaskExecutor en `AsyncConfig`
-```java
-@Bean("emailExecutor")
-public Executor emailExecutor() {
-    ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
-    exec.setCorePoolSize(2); exec.setMaxPoolSize(4); exec.setQueueCapacity(100);
-    exec.setThreadNamePrefix("email-"); exec.initialize();
-    return exec;
-}
-```
-
-#### 5.4 Configuración SMTP
-```properties
-spring.mail.host=${MAIL_HOST:smtp.gmail.com}
-spring.mail.port=${MAIL_PORT:587}
-spring.mail.username=${MAIL_USER:}
-spring.mail.password=${MAIL_PASSWORD:}
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-app.mail.from=${MAIL_FROM:no-reply@streakstudy.com}
-app.mail.enabled=${MAIL_ENABLED:false}
-```
-
-### 6. Acceptance Criteria
-- **AC1** `POST /api/v1/auth/register` → 201 + email "Bienvenido a StreakStudy".
-- **AC2** Email duplicado → rollback → **no** se envía email.
-- **AC3** Job completed → email "Tus N flashcards están listas" al uploader.
-- **AC4** Compra de badge → email "¡Ganaste el badge X!".
-- **AC5** SMTP caído → log ERROR + no propaga; el request original devuelve 2xx.
-- **AC6** Thread name del listener comienza con `email-` (asincronía verificada).
-- **AC7** `MAIL_ENABLED=false` → log `[MAIL-DISABLED]` sin conexión SMTP.
-
-### 7. Test Plan
-- Unit: `WelcomeEmailListenerTest`, `JavaMailEmailSenderAdapterTest`, `EmailTemplateRendererTest`.
-- Event: `@RecordApplicationEvents` en `AuthServiceEventTest`, `DocumentProcessingServiceEventTest`, `StoreServiceEventTest`.
-- E2E: `EmailIntegrationTest` con GreenMail (puerto random, `withPerMethodLifecycle(true)`).
-- Nomenclatura `shouldXxxWhenYyy`.
-
-### 8. Rollout
-1. Merge con `MAIL_ENABLED=false` por defecto en `.env.example`.
-2. CI: `MAIL_ENABLED=false`.
-3. Documentar vars en README (sección "Eventos y Email").
-
-### 9. Risks
-| Riesgo | Mitigación |
-|---|---|
-| SMTP cae y bloquea threads | Executor dedicado + timeout SMTP <10s |
-| `TenantContext` se pierde en `@Async` | El evento ya carga `institutionId`; listener no consulta repos |
-| Tests flaky con GreenMail | Puerto random + per-method lifecycle |
-
-### 10. Definition of Done
-- [ ] 3 records de evento publicados desde `AuthService`/`DocumentProcessingService`/`StoreService`
-- [ ] `EmailSenderPort` + adapter + 3 plantillas Thymeleaf
-- [ ] `emailExecutor` configurado
-- [ ] Tests unit + event + GreenMail verdes
-- [ ] README actualizado con sección "Eventos y Email"
-- [ ] Sin regresiones en suite existente
-
-**Labels:** `feature` `events` `email` `rubrica-8.1` `rubrica-8.3`
-**Estimación:** 1-2 días
+**Orden de mergeo:** ~~#1~~ → ~~#2~~ → #3 → ~~#4~~ → #5 → #6 → #7 → #8 → ~~#9~~ → #10
 
 ---
 
-## Issue 2 — docs: Postman Collection v1 con flujos completos y variables (Semana 10)
-
-> **Spec-driven** · Entregable obligatorio Semana 10.
-
-### 1. Context
-La rúbrica de Semana 10 exige un archivo `postman_collection.json` en la raíz con todos los endpoints, variables y autorización configurada. Hoy no existe.
-
-### 2. Problem
-Sin colección Postman no se puede defender la API en la entrega ni demostrar los flujos al evaluador.
-
-### 3. Goals
-- **G1** Archivo `postman_collection.json` en raíz, importable con un click.
-- **G2** Environment `streakstudy.postman_environment.json` con variables: `baseUrl`, `accessToken`, `institutionId`, `userId`, `deckId`, `flashcardId`.
-- **G3** Autorización Bearer Token a nivel de colección con `{{accessToken}}`.
-- **G4** Scripts post-response que guarden `accessToken` automáticamente tras login/register.
-- **G5** Ejemplos guardados (Postman "Examples") para happy path y error 4xx por endpoint.
-- **G6** Flujo end-to-end documentado como **Postman Runner**: register → login → create course → create deck → create flashcard → finish review → leaderboard.
-
-### 4. Non-goals
-- Tests de carga (Newman load).
-- Mocks de Postman.
-- CI con Newman (issue separado si se quiere).
-
-### 5. Specification
-
-#### 5.1 Estructura de carpetas dentro de la colección
-```
-StreakStudy API v1
-├── 00 — Health
-│   └── GET /api/v1/health
-├── 01 — Auth
-│   ├── POST /register (script: guarda accessToken)
-│   ├── POST /login (script: guarda accessToken)
-│   └── GET /me
-├── 02 — Institutions
-│   ├── POST /institutions
-│   └── GET /institutions/{id}
-├── 03 — Courses (CRUD)
-├── 04 — Decks (CRUD)
-├── 05 — Flashcards (CRUD)
-├── 06 — Documents (upload PDF + status + flashcards job)
-├── 07 — User Progress
-│   ├── POST /users/me/progress/review
-│   └── GET /users/me/progress
-├── 08 — Leaderboard
-├── 09 — Store
-│   ├── POST /store/streak-freeze
-│   └── POST /store/badges
-└── 10 — Errors (ejemplos 400/401/403/404/409)
-```
-
-#### 5.2 Variables del environment
-| Variable | Valor inicial | Uso |
-|---|---|---|
-| `baseUrl` | `http://localhost:8080` | Prefijo de URLs |
-| `accessToken` | (vacío, lo llena el script) | Bearer |
-| `institutionId` | `1` | Foreign key en register |
-| `userId` | (vacío, lo llena el script) | — |
-| `deckId` | (vacío, lo llena el script) | Cadena de tests |
-
-#### 5.3 Script de ejemplo (post-response en login)
-```javascript
-pm.test("status 200", () => pm.response.to.have.status(200));
-const body = pm.response.json();
-pm.environment.set("accessToken", body.accessToken);
-pm.environment.set("userId", body.user.id);
-```
-
-### 6. Acceptance Criteria
-- **AC1** Importar colección + environment en Postman → no hay errores de variables sin resolver.
-- **AC2** Correr "00→09" en Runner con DB vacía → todos los pasos verdes.
-- **AC3** Cada endpoint tiene al menos 1 "Saved Example" de respuesta exitosa y 1 de error.
-- **AC4** El Bearer se renueva automáticamente al re-ejecutar el endpoint de login.
-- **AC5** La colección se referencia desde el README (`## API Documentation`).
-
-### 7. Test Plan
-- Ejecutar `Runner` localmente contra `docker compose up` limpio.
-- Validar que las **15 respuestas guardadas** se renderizan en el visor.
-- Pedir a 1 compañero importar y correr el Runner como prueba de portabilidad.
-
-### 8. Rollout
-1. Iterar la colección a medida que cambia la API.
-2. Una vez mergeado el issue API hardening (`/api/v1`), regenerar URLs.
-3. Subir al PR un screenshot del Runner verde.
-
-### 9. Risks
-| Riesgo | Mitigación |
-|---|---|
-| URLs `/api/...` cambian a `/api/v1/...` antes del merge | Mergear este issue **después** del de API hardening |
-| Token expirado durante Runner | Renovar `accessToken` en pre-request script del folder protegido |
-| Datos residuales rompen el flow | Usar emails con timestamp (`test+{{$timestamp}}@x.com`) |
-
-### 10. Definition of Done
-- [ ] `postman_collection.json` y `streakstudy.postman_environment.json` en raíz
-- [ ] Runner verde end-to-end
-- [ ] README enlaza colección con badge "Run in Postman"
-- [ ] Screenshot del Runner adjunto al PR
-
-**Labels:** `docs` `postman` `entregable-s10`
-**Estimación:** 4h
-
----
-
-## Issue 3 — ci: Workflow de GitHub Actions con build, test, cobertura JaCoCo y badges
+## Issue 1 — ci: Workflow de GitHub Actions con build, test, cobertura JaCoCo y badges
 
 > **Spec-driven** · Cubre rúbrica §10.2 (GitHub) + bonus CI/CD.
 
@@ -351,18 +149,18 @@ jobs:
 | Tests dependen de SMTP real | `MAIL_ENABLED=false` |
 
 ### 10. Definition of Done
-- [ ] `ci.yml` mergeado y corriendo
-- [ ] Plugin JaCoCo activo
-- [ ] Badge en README
-- [ ] 1 PR validado end-to-end
-- [ ] Sección "GitHub Actions" en README explicando el flujo
+- [x] `ci.yml` mergeado y corriendo
+- [x] Plugin JaCoCo activo
+- [x] Badge en README
+- [x] 1 PR validado end-to-end
+- [x] Sección "GitHub Actions" en README explicando el flujo
 
 **Labels:** `ci` `tooling` `rubrica-10`
 **Estimación:** 3h
 
 ---
 
-## Issue 4 — refactor: API a /api/v1, CORS, path en ErrorResponse y HttpMessageNotReadable
+## Issue 2 — refactor: API a /api/v1, CORS, path en ErrorResponse y HttpMessageNotReadable
 
 > **Spec-driven** · Cubre rúbrica §5.2 (GlobalExceptionHandler), §6.1 (CORS), §7.1 (RESTful).
 
@@ -462,10 +260,10 @@ public ResponseEntity<Map<String,Object>> denied(AccessDeniedException ex, HttpS
 - Buscar y reemplazar `/api/` por `/api/v1/` en tests (mecánico).
 - Nuevo test `GlobalExceptionHandlerTest.shouldReturn400WithPathWhenJsonIsMalformed`.
 - Nuevo test `SecurityConfigCorsTest.shouldReturnCorsHeadersForPreflight`.
-- Regenerar Postman collection (issue #2 depende).
+- Regenerar Postman collection (issue #9 depende).
 
 ### 8. Rollout
-1. Hacer este PR antes que Postman (#2) y Swagger (#5).
+1. Hacer este PR antes que Postman (#9) y Swagger (#7).
 2. Comunicar al equipo de frontend el cambio de prefijo.
 3. Si el deploy ya está vivo, coordinar deploy + frontend en ventana corta.
 
@@ -477,110 +275,18 @@ public ResponseEntity<Map<String,Object>> denied(AccessDeniedException ex, HttpS
 | CORS demasiado permisivo en prod | `FRONTEND_URL` env var en deployment |
 
 ### 10. Definition of Done
-- [ ] Todos los `@RequestMapping` migrados a `/api/v1`
-- [ ] CORS bean configurado y test verde
-- [ ] `path` en todas las respuestas de error (verificar con un test por handler)
-- [ ] Handlers para `HttpMessageNotReadableException` y `AccessDeniedException`
-- [ ] Suite de tests verde
+- [x] Todos los `@RequestMapping` migrados a `/api/v1`
+- [x] CORS bean configurado y test verde
+- [x] `path` en todas las respuestas de error (verificar con un test por handler)
+- [x] Handlers para `HttpMessageNotReadableException` y `AccessDeniedException`
+- [x] Suite de tests verde
 
 **Labels:** `refactor` `api` `security` `rubrica-5.2` `rubrica-6.1` `rubrica-7.1`
 **Estimación:** 4h
 
 ---
 
-## Issue 5 — docs: Documentación OpenAPI/Swagger con springdoc
-
-> **Spec-driven** · Bonus rúbrica + soporta entregable Postman.
-
-### 1. Context
-La API no tiene documentación interactiva. La rúbrica menciona Swagger/OpenAPI como bonus.
-
-### 2. Problem
-El evaluador depende del README + Postman para entender los endpoints. Sin docs en vivo, dificulta exploración.
-
-### 3. Goals
-- **G1** Añadir `springdoc-openapi-starter-webmvc-ui`.
-- **G2** Endpoint `/swagger-ui.html` y `/v3/api-docs` accesibles sin autenticación.
-- **G3** Configurar `OpenAPI` bean con metadata: título, versión, descripción, contacto.
-- **G4** Configurar esquema de seguridad Bearer JWT para que el "Authorize" funcione.
-- **G5** Anotar al menos los controllers críticos con `@Tag` y endpoints con `@Operation` + `@ApiResponse`.
-
-### 4. Non-goals
-- Documentar todos los DTOs uno a uno con `@Schema` exhaustivo (springdoc infiere lo básico).
-- Versionar OpenAPI YAML como artifact.
-
-### 5. Specification
-
-#### 5.1 Dependencia
-```xml
-<dependency>
-  <groupId>org.springdoc</groupId>
-  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-  <version>2.6.0</version>
-</dependency>
-```
-
-#### 5.2 `OpenApiConfig`
-```java
-@Configuration
-public class OpenApiConfig {
-    @Bean
-    public OpenAPI api() {
-        return new OpenAPI()
-            .info(new Info().title("StreakStudy API")
-                .version("v1")
-                .description("Plataforma de aprendizaje gamificada con IA")
-                .contact(new Contact().name("Equipo StreakStudy").email("team@streakstudy.com")))
-            .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
-            .components(new Components().addSecuritySchemes("bearer-jwt",
-                new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));
-    }
-}
-```
-
-#### 5.3 Whitelist en `SecurityConfig`
-```java
-.requestMatchers("/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**").permitAll()
-```
-
-#### 5.4 Anotaciones a aplicar (mínimo)
-- `@Tag(name="Auth")` en `AuthController`, `@Tag(name="Courses")` en `CourseController`, etc.
-- `@Operation(summary="Registrar usuario")` en endpoints clave.
-- `@ApiResponses({@ApiResponse(responseCode="201"), @ApiResponse(responseCode="409", description="Email duplicado")})` en `register`.
-
-### 6. Acceptance Criteria
-- **AC1** `GET /swagger-ui.html` renderiza la UI sin token.
-- **AC2** El botón "Authorize" acepta JWT y lo aplica a endpoints protegidos.
-- **AC3** Los endpoints aparecen agrupados por tag.
-- **AC4** Cada tag tiene al menos un `@Operation` con summary.
-- **AC5** README enlaza `/swagger-ui.html` en la sección "API Documentation".
-
-### 7. Test Plan
-- Manual: arrancar app, abrir `/swagger-ui.html`, intentar `POST /auth/register` desde la UI.
-- Test de integración: `GET /v3/api-docs` → 200 con JSON OpenAPI 3.
-
-### 8. Rollout
-- Mergear después de #4 (API hardening) para que los paths queden ya en `/v1`.
-
-### 9. Risks
-| Riesgo | Mitigación |
-|---|---|
-| Choque con Spring Security | Whitelist explícita de `/swagger-ui/**` y `/v3/api-docs/**` |
-| Swagger expone endpoints en producción | OK para esta entrega (académica). En real-world, restringir por perfil. |
-
-### 10. Definition of Done
-- [ ] Springdoc agregado
-- [ ] `/swagger-ui.html` accesible y funcional
-- [ ] "Authorize" funciona con JWT
-- [ ] 4+ controllers anotados con `@Tag` + `@Operation`
-- [ ] README actualizado
-
-**Labels:** `docs` `bonus` `openapi`
-**Estimación:** 2h
-
----
-
-## Issue 6 — feat: Refresh tokens y UserDetailsService personalizado
+## Issue 3 — feat: Refresh tokens y UserDetailsService personalizado
 
 > **Spec-driven** · Completa rúbrica §6.2 (JWT 1.5 pts full).
 
@@ -686,339 +392,114 @@ public class JwtUserDetailsService implements UserDetailsService {
 
 ---
 
-## Issue 7 — security: @PreAuthorize granular y validaciones en DTOs restantes
+## Issue 4 — feat: Sistema de eventos asíncronos + servicio de email transaccional
 
-> **Spec-driven** · Completa rúbrica §1.3 (Validaciones) y §6.3 (Roles, full 1.0).
+> **Spec-driven** · Cubre rúbrica §8.1 (Eventos), §8.3 (Email) y refuerza §8.2 (Asincronía).
 
 ### 1. Context
-- Solo 9 de 24 DTOs tienen validaciones (`@NotNull/@Email/@Size`). La rúbrica §1.3 exige validaciones a nivel aplicación.
-- `@PreAuthorize` aparece en 4 lugares; endpoints administrativos (institutions, courses, decks) están sin protección de rol. La rúbrica §6.3 (1.0 pto full) pide "métodos sensibles" protegidos.
+StreakStudy hoy no tiene `ApplicationEvent`s ni servicio de correo. La rúbrica exige eventos en **más de 2 casos de uso** (§8.1, 1.0 pto) y servicio de email con plantillas (§8.3, 0.5 pto). Sin esto perdemos ~1.5 pts.
 
 ### 2. Problem
-1. Datos malformados llegan a la capa de servicio.
-2. Cualquier usuario autenticado puede crear/borrar instituciones.
-3. STUDENT podría borrar courses si no se valida.
+Side-effects acoplados a lógica de negocio en `AuthService.register`, `DocumentProcessingService.generateFlashcards` y `StoreService.buyBadge`. Sin canal para notificar al usuario.
 
 ### 3. Goals
-- **G1** Agregar `@Valid` + validaciones (`@NotBlank/@Size/@Email/@Min/@Max`) a los 15 DTOs sin cobertura.
-- **G2** Definir matriz de roles y aplicar `@PreAuthorize` en cada controller administrativo.
-- **G3** Agregar rol `ADMIN` (y opcionalmente `INSTRUCTOR`) si no existe ya en `UserRole`.
-- **G4** Tests que verifiquen 403 para roles incorrectos.
+- **G1** Eventos: `UserRegisteredEvent`, `FlashcardsGeneratedEvent`, `BadgeEarnedEvent`.
+- **G2** Listeners con `@TransactionalEventListener(AFTER_COMMIT)` + `@Async("emailExecutor")`.
+- **G3** `EmailSenderPort` + `JavaMailEmailSenderAdapter` con plantillas Thymeleaf HTML.
+- **G4** Modo `MAIL_ENABLED=false` para CI/tests (log-only).
+- **G5** Tests con `@RecordApplicationEvents` y GreenMail.
 
 ### 4. Non-goals
-- Permisos a nivel de recurso individual (ABAC) — solo RBAC simple.
-- UI de gestión de roles.
+- i18n de plantillas, retries SMTP, cola persistente, tracking de aperturas.
 
 ### 5. Specification
 
-#### 5.1 DTOs a validar
-| DTO | Validaciones a agregar |
-|---|---|
-| `FinishReviewRequest` | `@NotNull` en `flashcardId`, `correct` |
-| `GenerateFlashcardsRequest` | `@NotNull deckId`; `@Min(1) chunks` |
-| `BadgePurchaseRequest` | `@NotBlank @Size(max=50) badgeName` |
-| `CreateCourseRequest` | (ya tiene) — revisar |
-| `UpdateDeckRequest` | `@NotBlank @Size(max=200) name` |
-| `DocumentUploadResponse` | (response, sin validación) |
-| ... (revisar los 15) | |
+#### 5.1 Paquetes nuevos
+```
+application/event/{UserRegisteredEvent,FlashcardsGeneratedEvent,BadgeEarnedEvent}.java
+application/port/EmailSenderPort.java
+infrastructure/email/{JavaMailEmailSenderAdapter,EmailProperties,EmailTemplateRenderer}.java
+infrastructure/event/listener/{Welcome,FlashcardsReady,BadgeEarned}EmailListener.java
+resources/templates/email/{welcome,flashcards-ready,badge-earned}.html
+```
 
-#### 5.2 Matriz de roles
-| Endpoint | Roles permitidos |
-|---|---|
-| `POST /institutions` | `ADMIN` (en lugar de `permitAll` actual) |
-| `DELETE /institutions/{id}` | `ADMIN` |
-| `POST /courses`, `DELETE /courses/{id}` | `ADMIN`, `INSTRUCTOR` |
-| `POST /decks`, `PUT/DELETE /decks/{id}` | `INSTRUCTOR`, `STUDENT` (propio) |
-| `POST/PUT/DELETE /flashcards` | `INSTRUCTOR`, `STUDENT` |
-| `POST /store/badges`, `POST /store/streak-freeze` | `STUDENT` |
-| `POST /users/me/progress/review` | `STUDENT` |
-| `GET /leaderboard` | autenticado (cualquiera) |
+#### 5.2 Dependencias (pom.xml)
+```xml
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-mail</artifactId></dependency>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-thymeleaf</artifactId></dependency>
+<dependency><groupId>com.icegreen</groupId><artifactId>greenmail-junit5</artifactId><version>2.0.1</version><scope>test</scope></dependency>
+```
 
-#### 5.3 Cambio en `UserRole` enum
+#### 5.3 ThreadPoolTaskExecutor en `AsyncConfig`
 ```java
-public enum UserRole { STUDENT, INSTRUCTOR, ADMIN }
-```
-
-#### 5.4 Aplicación
-- A nivel **clase** del controller con `@PreAuthorize("hasAnyAuthority('ADMIN')")` cuando todo el controller comparte rol.
-- A nivel **método** cuando varía por endpoint.
-
-### 6. Acceptance Criteria
-- **AC1** `POST /institutions` sin rol `ADMIN` → 403 `forbidden`.
-- **AC2** `STUDENT` intentando `DELETE /api/v1/courses/{id}` → 403.
-- **AC3** Request con body inválido (sin `@NotNull` violado) → 400 con array `errors` apuntando al campo.
-- **AC4** Los 15 DTOs documentados tienen al menos una validación.
-- **AC5** Tests parametrizados por rol: por cada endpoint admin, un test 200 con rol correcto y un test 403 con rol incorrecto.
-
-### 7. Test Plan
-- `CourseControllerAuthorizationTest`: matriz de roles vs endpoints.
-- `InstitutionControllerAuthorizationTest`: mismo patrón.
-- Tests de validación: por DTO, un test que envíe el campo inválido y verifique el `field` y `message` en la respuesta.
-
-### 8. Rollout
-1. Mergear **después** del issue #6 (refresh tokens) para no tocar `JwtService` dos veces.
-2. Si hay un usuario ADMIN seed, agregarlo en `data.sql` o en un endpoint protegido para bootstrap.
-3. Actualizar README con la matriz de roles.
-
-### 9. Risks
-| Riesgo | Mitigación |
-|---|---|
-| Romper flujos en frontend al pasar de permitAll a ADMIN | Comunicar antes; quizá temporalmente mantener `POST /institutions` abierto con un comentario `// TODO restringir cuando exista UI admin` |
-| Falta de usuarios ADMIN en producción | Seed inicial vía `CommandLineRunner` con email/password de env vars |
-
-### 10. Definition of Done
-- [ ] 15 DTOs con validaciones
-- [ ] Matriz de roles implementada vía `@PreAuthorize`
-- [ ] Rol `ADMIN` (+ `INSTRUCTOR`) agregado a `UserRole`
-- [ ] Tests AC1-AC5 verdes
-- [ ] README con matriz de roles
-- [ ] `AccessDeniedException` produce 403 con `error=forbidden` (depende de #4)
-
-**Labels:** `security` `validation` `rubrica-1.3` `rubrica-6.3`
-**Estimación:** 4h
-
----
-
-## Issue 8 — test: Cobertura de tests para Deck, Flashcard, Document y AiGenerationJob
-
-> **Spec-driven** · Completa rúbrica §4.1 (Repositorios), §4.2 (Servicios), §4.4 (TestContainers).
-
-### 1. Context
-La suite cubre auth/course/institution/leaderboard/store/userProgress, pero faltan tests del núcleo académico (Deck, Flashcard) y de los repos de Document/AiGenerationJob. TestContainers solo se usa en 2 tests.
-
-### 2. Problem
-- Sin `DeckServiceTest` / `FlashcardServiceTest`, regresiones en el dominio académico pasan sin alarma.
-- 4 de 8 repositorios no tienen test (`Deck`, `Flashcard`, `Document`, `AiGenerationJob`).
-- TestContainers limitado → no cubrimos comportamiento específico de PostgreSQL (índices, full-text si llega a usarse, JSONB, etc.).
-
-### 3. Goals
-- **G1** `DeckServiceTest` con Mockito — todos los métodos públicos.
-- **G2** `FlashcardServiceTest` con Mockito — todos los métodos públicos.
-- **G3** `DeckRepositoryAdapterTest`, `FlashcardRepositoryAdapterTest`, `DocumentRepositoryAdapterTest`, `AiGenerationJobRepositoryAdapterTest` con `@DataJpaTest`.
-- **G4** Migrar al menos 2 de estos repo tests a TestContainers PostgreSQL.
-- **G5** `DeckControllerTest` con `@WebMvcTest` (no existe).
-- **G6** Apuntar a cobertura JaCoCo ≥ 80% en `application/service/` y `infrastructure/persistence/adapter/`.
-
-### 4. Non-goals
-- Tests E2E con Selenium/Cypress.
-- Mutation testing.
-- Tests de carga.
-
-### 5. Specification
-
-#### 5.1 Tests a crear
-```
-src/test/java/com/streakstudy/
-  application/service/
-    DeckServiceTest.java                          # NUEVO
-    FlashcardServiceTest.java                     # NUEVO
-  infrastructure/persistence/
-    DeckRepositoryAdapterTest.java                # NUEVO @DataJpaTest H2
-    FlashcardRepositoryAdapterTest.java           # NUEVO @DataJpaTest H2
-    DocumentRepositoryAdapterTest.java            # NUEVO @DataJpaTest H2
-    AiGenerationJobRepositoryAdapterTest.java     # NUEVO @DataJpaTest H2
-    DeckRepositoryAdapterPostgresContainerTest.java       # NUEVO TestContainers
-    FlashcardRepositoryAdapterPostgresContainerTest.java  # NUEVO TestContainers
-  infrastructure/web/
-    DeckControllerTest.java                        # NUEVO @WebMvcTest
-```
-
-#### 5.2 Nomenclatura
-Todos: `shouldXxxWhenYyy`. Ejemplos:
-- `shouldReturnFlashcardListWhenDeckExists`
-- `shouldThrowEntityNotFoundWhenUpdatingMissingFlashcard`
-- `shouldFilterByCurrentTenantWhenListingDecks`
-- `shouldPersistAndRetrieveDocumentByHashWhenUsingPostgres`
-
-#### 5.3 Casos mínimos por test
-**Service tests:**
-- Happy path por método público
-- Edge cases: not found, tenant violation
-- Mockeo correcto del repository y `TenantContext`
-
-**Repository tests:**
-- CRUD (save, findById, deleteById)
-- Queries personalizadas (findByDeckId, findByInstitutionId, etc.)
-- Filtrado por tenant
-- Constraints (unique, not null)
-
-#### 5.4 TestContainers configurado
-```java
-@DataJpaTest @Testcontainers @ActiveProfiles("test")
-@AutoConfigureTestDatabase(replace = Replace.NONE)
-@Import(DeckRepositoryAdapter.class)
-class DeckRepositoryAdapterPostgresContainerTest {
-    @Container
-    static PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:16-alpine")
-        .withDatabaseName("streakstudy_test");
-    // ... DynamicPropertySource
+@Bean("emailExecutor")
+public Executor emailExecutor() {
+    ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+    exec.setCorePoolSize(2); exec.setMaxPoolSize(4); exec.setQueueCapacity(100);
+    exec.setThreadNamePrefix("email-"); exec.initialize();
+    return exec;
 }
 ```
 
-#### 5.5 JaCoCo umbrales (opcional pero recomendado)
-```xml
-<execution>
-  <id>check</id><phase>verify</phase>
-  <goals><goal>check</goal></goals>
-  <configuration>
-    <rules><rule>
-      <element>BUNDLE</element>
-      <limits><limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit></limits>
-    </rule></rules>
-  </configuration>
-</execution>
+#### 5.4 Configuración SMTP
+```properties
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USER:}
+spring.mail.password=${MAIL_PASSWORD:}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+app.mail.from=${MAIL_FROM:no-reply@streakstudy.com}
+app.mail.enabled=${MAIL_ENABLED:false}
 ```
 
 ### 6. Acceptance Criteria
-- **AC1** Tests nuevos verdes en local (`./mvnw test`).
-- **AC2** Cobertura global ≥ 70%; capa de service ≥ 80%.
-- **AC3** Al menos 4 tests con TestContainers (suma con los 2 existentes = 6).
-- **AC4** Todos los tests nuevos usan nomenclatura BDD.
-- **AC5** Tests corren en GitHub Actions (depende de issue #3).
+- **AC1** `POST /api/v1/auth/register` → 201 + email "Bienvenido a StreakStudy".
+- **AC2** Email duplicado → rollback → **no** se envía email.
+- **AC3** Job completed → email "Tus N flashcards están listas" al uploader.
+- **AC4** Compra de badge → email "¡Ganaste el badge X!".
+- **AC5** SMTP caído → log ERROR + no propaga; el request original devuelve 2xx.
+- **AC6** Thread name del listener comienza con `email-` (asincronía verificada).
+- **AC7** `MAIL_ENABLED=false` → log `[MAIL-DISABLED]` sin conexión SMTP.
 
 ### 7. Test Plan
-- Correr `./mvnw verify` y revisar `target/site/jacoco/index.html`.
-- Cherry-pick: rompe deliberadamente `DeckService.create` y verifica que el test falla.
+- Unit: `WelcomeEmailListenerTest`, `JavaMailEmailSenderAdapterTest`, `EmailTemplateRendererTest`.
+- Event: `@RecordApplicationEvents` en `AuthServiceEventTest`, `DocumentProcessingServiceEventTest`, `StoreServiceEventTest`.
+- E2E: `EmailIntegrationTest` con GreenMail (puerto random, `withPerMethodLifecycle(true)`).
+- Nomenclatura `shouldXxxWhenYyy`.
 
 ### 8. Rollout
-1. Iterativo: un PR por tipo (services first, luego repos, luego controller).
-2. Si el umbral JaCoCo falla, ajustar a un valor real (no aspiracional).
+1. Merge con `MAIL_ENABLED=false` por defecto en `.env.example`.
+2. CI: `MAIL_ENABLED=false`.
+3. Documentar vars en README (sección "Eventos y Email").
 
 ### 9. Risks
 | Riesgo | Mitigación |
 |---|---|
-| TestContainers no arranca en GH Actions | Service container postgres como fallback (issue #3) |
-| Tests flaky por orden | `@DirtiesContext` o `@Transactional` por test |
-| Umbral JaCoCo bloquea PRs sin tiempo | Ajustar gradualmente: 60% → 70% → 80% |
+| SMTP cae y bloquea threads | Executor dedicado + timeout SMTP <10s |
+| `TenantContext` se pierde en `@Async` | El evento ya carga `institutionId`; listener no consulta repos |
+| Tests flaky con GreenMail | Puerto random + per-method lifecycle |
 
 ### 10. Definition of Done
-- [ ] 7 test files nuevos creados
-- [ ] `DeckControllerTest` con @WebMvcTest
-- [ ] 2 tests adicionales con TestContainers
-- [ ] Cobertura ≥ 70% (reporte JaCoCo en PR)
-- [ ] Sin tests flaky en 3 corridas consecutivas de CI
+- [x] 3 records de evento publicados desde `AuthService`/`DocumentProcessingService`/`StoreService`
+- [x] `EmailSenderPort` + adapter + 3 plantillas Thymeleaf
+- [x] `emailExecutor` configurado
+- [x] Tests unit + event + GreenMail verdes
+- [x] README actualizado con sección "Eventos y Email"
+- [x] Sin regresiones en suite existente
 
-**Labels:** `test` `quality` `rubrica-4.1` `rubrica-4.2` `rubrica-4.4`
-**Estimación:** 1 día
+**Labels:** `feature` `events` `email` `rubrica-8.1` `rubrica-8.3`
+**Estimación:** 1-2 días
 
 ---
 
-## Issue 9 — chore: SLF4J logging, cleanup de TestStreakController y README de entrega
+## Issue 5 — feat: Recuperación de contraseña por email (forgot/reset)
 
-> **Spec-driven** · Bonus logging + rúbrica §10.1 (README) + calidad general.
-
-### 1. Context
-- `JwtAuthenticationFilter` usa `System.out.println` + `printStackTrace` para errores.
-- `TestStreakController` parece de debug — no debería estar en producción.
-- README necesita secciones nuevas (Eventos, Email, CI badge, link deployment, matriz de roles).
-
-### 2. Problem
-1. Logs no estructurados rompen el bonus "Logging SLF4J + Logback" de la rúbrica.
-2. Endpoints de testing en producción son superficie de ataque.
-3. README incompleto baja §10.1 a 0.3 en lugar de 0.4.
-
-### 3. Goals
-- **G1** Reemplazar todo `System.out.println` y `printStackTrace` por SLF4J (`@Slf4j` o `LoggerFactory`).
-- **G2** Eliminar `TestStreakController` o restringirlo a perfil `dev` con `@Profile("dev")`.
-- **G3** Configurar Logback con patrón estructurado y niveles por paquete en `logback-spring.xml`.
-- **G4** Actualizar README con: badges (CI, license), sección "Eventos y Email", sección "GitHub Actions", sección "Roles y Permisos", link al deployment, link Swagger/Postman.
-- **G5** Verificar que `application.properties` no tiene `spring.jpa.show-sql=true` por default (ruido en logs).
-
-### 4. Non-goals
-- ELK/Loki/observabilidad externa.
-- Tracing distribuido (Sleuth/Zipkin).
-- Logs JSON para producción (bonus opcional).
-
-### 5. Specification
-
-#### 5.1 Sustituciones de logging
-| Archivo | Antes | Después |
-|---|---|---|
-| `JwtAuthenticationFilter.java` | `System.out.println("...")` + `printStackTrace()` | `log.warn("JWT auth failed: {}", ex.getMessage())` (sin stack en WARN, en DEBUG sí) |
-| `DocumentProcessingService.java` (catch genérico) | nada (silencioso) | `log.error("PDF processing failed for doc={}", documentId, e)` |
-
-#### 5.2 `logback-spring.xml`
-```xml
-<configuration>
-  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder><pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern></encoder>
-  </appender>
-  <logger name="com.streakstudy" level="DEBUG"/>
-  <logger name="org.hibernate.SQL" level="WARN"/>
-  <root level="INFO"><appender-ref ref="CONSOLE"/></root>
-</configuration>
-```
-
-#### 5.3 `TestStreakController` decision
-Opción A (recomendada): eliminar.
-Opción B: anotar `@Profile("dev")` para que solo cargue en local.
-
-#### 5.4 README — secciones a agregar
-```md
-## CI/CD
-![CI](.../ci.yml/badge.svg) — corre en cada PR.
-
-## Eventos y Email
-Sistema de eventos basado en `ApplicationEvent` con listeners async (ver issue #1).
-
-## Roles y Permisos
-| Rol | Endpoints accesibles |
-|---|---|
-| STUDENT | review, store, leaderboard |
-| INSTRUCTOR | + courses, decks, flashcards |
-| ADMIN | + institutions |
-
-## Deployment
-- API: https://streakstudy.onrender.com (o el que corresponda)
-- Swagger: https://streakstudy.onrender.com/swagger-ui.html
-- Postman: [colección](./postman_collection.json)
-
-## Equipo
-- ... (verificar nombres)
-```
-
-### 6. Acceptance Criteria
-- **AC1** `grep -r "System.out.println\|printStackTrace" src/main/` devuelve 0 resultados.
-- **AC2** `TestStreakController` eliminado o con `@Profile("dev")`.
-- **AC3** `logback-spring.xml` presente; logs en `INFO` por default, `DEBUG` para `com.streakstudy`.
-- **AC4** README tiene ≥ 8 secciones listadas en G4.
-- **AC5** Badges en README renderizan correctamente en GitHub.
-- **AC6** Equipo y licencia documentados.
-
-### 7. Test Plan
-- Manual: arrancar app, generar registro fallido, verificar log estructurado en consola.
-- `grep` automatizado en CI (script de pre-commit opcional).
-- Renderizar README en GitHub y revisar visual.
-
-### 8. Rollout
-- Último issue en mergearse (depende de #1, #3, #4, #5, #6, #7 para que los links del README apunten a algo real).
-
-### 9. Risks
-| Riesgo | Mitigación |
-|---|---|
-| Logs de prod muy verbosos | `<logger name="com.streakstudy" level="INFO"/>` en profile prod |
-| Eliminar `TestStreakController` rompe demo | Confirmar con equipo que no es usado |
-
-### 10. Definition of Done
-- [ ] 0 ocurrencias de `System.out.println` en `src/main/`
-- [ ] `TestStreakController` resuelto (eliminar o `@Profile`)
-- [ ] `logback-spring.xml` activo
-- [ ] README final con 8+ secciones + badges + links
-- [ ] PR final con checklist completa de los 9 issues del proyecto
-
-**Labels:** `chore` `docs` `logging` `rubrica-10.1`
-**Estimación:** 2h
-
----
-
-## Issue 10 — feat: Recuperación de contraseña por email (forgot/reset)
-
-> **Spec-driven** · Extiende §6.2 (Autenticación) y §8.3 (Email). Depende del Issue #1 (eventos + email).
+> **Spec-driven** · Extiende §6.2 (Autenticación) y §8.3 (Email). Depende del Issue #4 (eventos + email).
 
 ### 1. Context
 StreakStudy permite registro y login (`AuthService`), pero no hay flujo para
-recuperar la contraseña cuando el usuario la olvida. El Issue #1 ya provee la
+recuperar la contraseña cuando el usuario la olvida. El Issue #4 ya provee la
 infraestructura de eventos + plantillas Thymeleaf + `EmailSenderPort`, por lo
 que este issue se apoya en ese tooling para el canal de envío.
 
@@ -1040,7 +521,7 @@ que este issue se apoya en ese tooling para el canal de envío.
 - **G4** `PasswordResetRequestedEvent` publicado tras persistir el token; un
   listener async (`emailExecutor`) renderiza la plantilla
   `password-reset.html` con el link `${frontendUrl}/reset?token=...` y lo
-  envía con `EmailSenderPort` (reusa Issue #1).
+  envía con `EmailSenderPort` (reusa Issue #4).
 - **G5** Al solicitar un nuevo reset, **invalidar tokens previos** del mismo
   usuario que sigan activos (rotación). Tras usar un token, marcarlo
   `used_at = now()`.
@@ -1202,7 +683,7 @@ app.password-reset.frontend-url=${FRONTEND_URL:http://localhost:5173}
   el flujo password-reset end-to-end.
 
 ### 8. Rollout
-1. Mergear **después** del Issue #1 (necesita `EmailSenderPort` + listeners async).
+1. Mergear **después** del Issue #4 (necesita `EmailSenderPort` + listeners async).
 2. Coordinar con frontend: la ruta del CTA en el email debe coincidir con
    la ruta real del frontend (`/reset-password?token=...`).
 3. Documentar las dos rutas nuevas en README + Postman + Swagger.
@@ -1230,7 +711,528 @@ app.password-reset.frontend-url=${FRONTEND_URL:http://localhost:5173}
 
 **Labels:** `feature` `security` `auth` `email` `rubrica-6.2` `rubrica-8.3`
 **Estimación:** 4-6h
-**Depends on:** Issue #1 (eventos + email)
+**Depends on:** Issue #4 (eventos + email)
+
+---
+
+## Issue 6 — security: @PreAuthorize granular y validaciones en DTOs restantes
+
+> **Spec-driven** · Completa rúbrica §1.3 (Validaciones) y §6.3 (Roles, full 1.0).
+
+### 1. Context
+- Solo 9 de 24 DTOs tienen validaciones (`@NotNull/@Email/@Size`). La rúbrica §1.3 exige validaciones a nivel aplicación.
+- `@PreAuthorize` aparece en 4 lugares; endpoints administrativos (institutions, courses, decks) están sin protección de rol. La rúbrica §6.3 (1.0 pto full) pide "métodos sensibles" protegidos.
+
+### 2. Problem
+1. Datos malformados llegan a la capa de servicio.
+2. Cualquier usuario autenticado puede crear/borrar instituciones.
+3. STUDENT podría borrar courses si no se valida.
+
+### 3. Goals
+- **G1** Agregar `@Valid` + validaciones (`@NotBlank/@Size/@Email/@Min/@Max`) a los 15 DTOs sin cobertura.
+- **G2** Definir matriz de roles y aplicar `@PreAuthorize` en cada controller administrativo.
+- **G3** Agregar rol `ADMIN` (y opcionalmente `INSTRUCTOR`) si no existe ya en `UserRole`.
+- **G4** Tests que verifiquen 403 para roles incorrectos.
+
+### 4. Non-goals
+- Permisos a nivel de recurso individual (ABAC) — solo RBAC simple.
+- UI de gestión de roles.
+
+### 5. Specification
+
+#### 5.1 DTOs a validar
+| DTO | Validaciones a agregar |
+|---|---|
+| `FinishReviewRequest` | `@NotNull` en `flashcardId`, `correct` |
+| `GenerateFlashcardsRequest` | `@NotNull deckId`; `@Min(1) chunks` |
+| `BadgePurchaseRequest` | `@NotBlank @Size(max=50) badgeName` |
+| `CreateCourseRequest` | (ya tiene) — revisar |
+| `UpdateDeckRequest` | `@NotBlank @Size(max=200) name` |
+| `DocumentUploadResponse` | (response, sin validación) |
+| ... (revisar los 15) | |
+
+#### 5.2 Matriz de roles
+| Endpoint | Roles permitidos |
+|---|---|
+| `POST /institutions` | `ADMIN` (en lugar de `permitAll` actual) |
+| `DELETE /institutions/{id}` | `ADMIN` |
+| `POST /courses`, `DELETE /courses/{id}` | `ADMIN`, `INSTRUCTOR` |
+| `POST /decks`, `PUT/DELETE /decks/{id}` | `INSTRUCTOR`, `STUDENT` (propio) |
+| `POST/PUT/DELETE /flashcards` | `INSTRUCTOR`, `STUDENT` |
+| `POST /store/badges`, `POST /store/streak-freeze` | `STUDENT` |
+| `POST /users/me/progress/review` | `STUDENT` |
+| `GET /leaderboard` | autenticado (cualquiera) |
+
+#### 5.3 Cambio en `UserRole` enum
+```java
+public enum UserRole { STUDENT, INSTRUCTOR, ADMIN }
+```
+
+#### 5.4 Aplicación
+- A nivel **clase** del controller con `@PreAuthorize("hasAnyAuthority('ADMIN')")` cuando todo el controller comparte rol.
+- A nivel **método** cuando varía por endpoint.
+
+### 6. Acceptance Criteria
+- **AC1** `POST /institutions` sin rol `ADMIN` → 403 `forbidden`.
+- **AC2** `STUDENT` intentando `DELETE /api/v1/courses/{id}` → 403.
+- **AC3** Request con body inválido (sin `@NotNull` violado) → 400 con array `errors` apuntando al campo.
+- **AC4** Los 15 DTOs documentados tienen al menos una validación.
+- **AC5** Tests parametrizados por rol: por cada endpoint admin, un test 200 con rol correcto y un test 403 con rol incorrecto.
+
+### 7. Test Plan
+- `CourseControllerAuthorizationTest`: matriz de roles vs endpoints.
+- `InstitutionControllerAuthorizationTest`: mismo patrón.
+- Tests de validación: por DTO, un test que envíe el campo inválido y verifique el `field` y `message` en la respuesta.
+
+### 8. Rollout
+1. Mergear **después** del issue #3 (refresh tokens) para no tocar `JwtService` dos veces.
+2. Si hay un usuario ADMIN seed, agregarlo en `data.sql` o en un endpoint protegido para bootstrap.
+3. Actualizar README con la matriz de roles.
+
+### 9. Risks
+| Riesgo | Mitigación |
+|---|---|
+| Romper flujos en frontend al pasar de permitAll a ADMIN | Comunicar antes; quizá temporalmente mantener `POST /institutions` abierto con un comentario `// TODO restringir cuando exista UI admin` |
+| Falta de usuarios ADMIN en producción | Seed inicial vía `CommandLineRunner` con email/password de env vars |
+
+### 10. Definition of Done
+- [ ] 15 DTOs con validaciones
+- [ ] Matriz de roles implementada vía `@PreAuthorize`
+- [ ] Rol `ADMIN` (+ `INSTRUCTOR`) agregado a `UserRole`
+- [ ] Tests AC1-AC5 verdes
+- [ ] README con matriz de roles
+- [ ] `AccessDeniedException` produce 403 con `error=forbidden` (depende de #2)
+
+**Labels:** `security` `validation` `rubrica-1.3` `rubrica-6.3`
+**Estimación:** 4h
+
+---
+
+## Issue 7 — docs: Documentación OpenAPI/Swagger con springdoc
+
+> **Spec-driven** · Bonus rúbrica + soporta entregable Postman.
+
+### 1. Context
+La API no tiene documentación interactiva. La rúbrica menciona Swagger/OpenAPI como bonus.
+
+### 2. Problem
+El evaluador depende del README + Postman para entender los endpoints. Sin docs en vivo, dificulta exploración.
+
+### 3. Goals
+- **G1** Añadir `springdoc-openapi-starter-webmvc-ui`.
+- **G2** Endpoint `/swagger-ui.html` y `/v3/api-docs` accesibles sin autenticación.
+- **G3** Configurar `OpenAPI` bean con metadata: título, versión, descripción, contacto.
+- **G4** Configurar esquema de seguridad Bearer JWT para que el "Authorize" funcione.
+- **G5** Anotar al menos los controllers críticos con `@Tag` y endpoints con `@Operation` + `@ApiResponse`.
+
+### 4. Non-goals
+- Documentar todos los DTOs uno a uno con `@Schema` exhaustivo (springdoc infiere lo básico).
+- Versionar OpenAPI YAML como artifact.
+
+### 5. Specification
+
+#### 5.1 Dependencia
+```xml
+<dependency>
+  <groupId>org.springdoc</groupId>
+  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+  <version>2.6.0</version>
+</dependency>
+```
+
+#### 5.2 `OpenApiConfig`
+```java
+@Configuration
+public class OpenApiConfig {
+    @Bean
+    public OpenAPI api() {
+        return new OpenAPI()
+            .info(new Info().title("StreakStudy API")
+                .version("v1")
+                .description("Plataforma de aprendizaje gamificada con IA")
+                .contact(new Contact().name("Equipo StreakStudy").email("team@streakstudy.com")))
+            .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"))
+            .components(new Components().addSecuritySchemes("bearer-jwt",
+                new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));
+    }
+}
+```
+
+#### 5.3 Whitelist en `SecurityConfig`
+```java
+.requestMatchers("/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**").permitAll()
+```
+
+#### 5.4 Anotaciones a aplicar (mínimo)
+- `@Tag(name="Auth")` en `AuthController`, `@Tag(name="Courses")` en `CourseController`, etc.
+- `@Operation(summary="Registrar usuario")` en endpoints clave.
+- `@ApiResponses({@ApiResponse(responseCode="201"), @ApiResponse(responseCode="409", description="Email duplicado")})` en `register`.
+
+### 6. Acceptance Criteria
+- **AC1** `GET /swagger-ui.html` renderiza la UI sin token.
+- **AC2** El botón "Authorize" acepta JWT y lo aplica a endpoints protegidos.
+- **AC3** Los endpoints aparecen agrupados por tag.
+- **AC4** Cada tag tiene al menos un `@Operation` con summary.
+- **AC5** README enlaza `/swagger-ui.html` en la sección "API Documentation".
+
+### 7. Test Plan
+- Manual: arrancar app, abrir `/swagger-ui.html`, intentar `POST /auth/register` desde la UI.
+- Test de integración: `GET /v3/api-docs` → 200 con JSON OpenAPI 3.
+
+### 8. Rollout
+- Mergear después de #2 (API hardening) para que los paths queden ya en `/v1`.
+
+### 9. Risks
+| Riesgo | Mitigación |
+|---|---|
+| Choque con Spring Security | Whitelist explícita de `/swagger-ui/**` y `/v3/api-docs/**` |
+| Swagger expone endpoints en producción | OK para esta entrega (académica). En real-world, restringir por perfil. |
+
+### 10. Definition of Done
+- [ ] Springdoc agregado
+- [ ] `/swagger-ui.html` accesible y funcional
+- [ ] "Authorize" funciona con JWT
+- [ ] 4+ controllers anotados con `@Tag` + `@Operation`
+- [ ] README actualizado
+
+**Labels:** `docs` `bonus` `openapi`
+**Estimación:** 2h
+
+---
+
+## Issue 8 — test: Cobertura de tests para Deck, Flashcard, Document y AiGenerationJob
+
+> **Spec-driven** · Completa rúbrica §4.1 (Repositorios), §4.2 (Servicios), §4.4 (TestContainers).
+
+### 1. Context
+La suite cubre auth/course/institution/leaderboard/store/userProgress, pero faltan tests del núcleo académico (Deck, Flashcard) y de los repos de Document/AiGenerationJob. TestContainers solo se usa en 2 tests.
+
+### 2. Problem
+- Sin `DeckServiceTest` / `FlashcardServiceTest`, regresiones en el dominio académico pasan sin alarma.
+- 4 de 8 repositorios no tienen test (`Deck`, `Flashcard`, `Document`, `AiGenerationJob`).
+- TestContainers limitado → no cubrimos comportamiento específico de PostgreSQL (índices, full-text si llega a usarse, JSONB, etc.).
+
+### 3. Goals
+- **G1** `DeckServiceTest` con Mockito — todos los métodos públicos.
+- **G2** `FlashcardServiceTest` con Mockito — todos los métodos públicos.
+- **G3** `DeckRepositoryAdapterTest`, `FlashcardRepositoryAdapterTest`, `DocumentRepositoryAdapterTest`, `AiGenerationJobRepositoryAdapterTest` con `@DataJpaTest`.
+- **G4** Migrar al menos 2 de estos repo tests a TestContainers PostgreSQL.
+- **G5** `DeckControllerTest` con `@WebMvcTest` (no existe).
+- **G6** Apuntar a cobertura JaCoCo ≥ 80% en `application/service/` y `infrastructure/persistence/adapter/`.
+
+### 4. Non-goals
+- Tests E2E con Selenium/Cypress.
+- Mutation testing.
+- Tests de carga.
+
+### 5. Specification
+
+#### 5.1 Tests a crear
+```
+src/test/java/com/streakstudy/
+  application/service/
+    DeckServiceTest.java                          # NUEVO
+    FlashcardServiceTest.java                     # NUEVO
+  infrastructure/persistence/
+    DeckRepositoryAdapterTest.java                # NUEVO @DataJpaTest H2
+    FlashcardRepositoryAdapterTest.java           # NUEVO @DataJpaTest H2
+    DocumentRepositoryAdapterTest.java            # NUEVO @DataJpaTest H2
+    AiGenerationJobRepositoryAdapterTest.java     # NUEVO @DataJpaTest H2
+    DeckRepositoryAdapterPostgresContainerTest.java       # NUEVO TestContainers
+    FlashcardRepositoryAdapterPostgresContainerTest.java  # NUEVO TestContainers
+  infrastructure/web/
+    DeckControllerTest.java                        # NUEVO @WebMvcTest
+```
+
+#### 5.2 Nomenclatura
+Todos: `shouldXxxWhenYyy`. Ejemplos:
+- `shouldReturnFlashcardListWhenDeckExists`
+- `shouldThrowEntityNotFoundWhenUpdatingMissingFlashcard`
+- `shouldFilterByCurrentTenantWhenListingDecks`
+- `shouldPersistAndRetrieveDocumentByHashWhenUsingPostgres`
+
+#### 5.3 Casos mínimos por test
+**Service tests:**
+- Happy path por método público
+- Edge cases: not found, tenant violation
+- Mockeo correcto del repository y `TenantContext`
+
+**Repository tests:**
+- CRUD (save, findById, deleteById)
+- Queries personalizadas (findByDeckId, findByInstitutionId, etc.)
+- Filtrado por tenant
+- Constraints (unique, not null)
+
+#### 5.4 TestContainers configurado
+```java
+@DataJpaTest @Testcontainers @ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+@Import(DeckRepositoryAdapter.class)
+class DeckRepositoryAdapterPostgresContainerTest {
+    @Container
+    static PostgreSQLContainer<?> pg = new PostgreSQLContainer<>("postgres:16-alpine")
+        .withDatabaseName("streakstudy_test");
+    // ... DynamicPropertySource
+}
+```
+
+#### 5.5 JaCoCo umbrales (opcional pero recomendado)
+```xml
+<execution>
+  <id>check</id><phase>verify</phase>
+  <goals><goal>check</goal></goals>
+  <configuration>
+    <rules><rule>
+      <element>BUNDLE</element>
+      <limits><limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit></limits>
+    </rule></rules>
+  </configuration>
+</execution>
+```
+
+### 6. Acceptance Criteria
+- **AC1** Tests nuevos verdes en local (`./mvnw test`).
+- **AC2** Cobertura global ≥ 70%; capa de service ≥ 80%.
+- **AC3** Al menos 4 tests con TestContainers (suma con los 2 existentes = 6).
+- **AC4** Todos los tests nuevos usan nomenclatura BDD.
+- **AC5** Tests corren en GitHub Actions (depende de issue #1).
+
+### 7. Test Plan
+- Correr `./mvnw verify` y revisar `target/site/jacoco/index.html`.
+- Cherry-pick: rompe deliberadamente `DeckService.create` y verifica que el test falla.
+
+### 8. Rollout
+1. Iterativo: un PR por tipo (services first, luego repos, luego controller).
+2. Si el umbral JaCoCo falla, ajustar a un valor real (no aspiracional).
+
+### 9. Risks
+| Riesgo | Mitigación |
+|---|---|
+| TestContainers no arranca en GH Actions | Service container postgres como fallback (issue #1) |
+| Tests flaky por orden | `@DirtiesContext` o `@Transactional` por test |
+| Umbral JaCoCo bloquea PRs sin tiempo | Ajustar gradualmente: 60% → 70% → 80% |
+
+### 10. Definition of Done
+- [ ] 7 test files nuevos creados
+- [ ] `DeckControllerTest` con @WebMvcTest
+- [ ] 2 tests adicionales con TestContainers
+- [ ] Cobertura ≥ 70% (reporte JaCoCo en PR)
+- [ ] Sin tests flaky en 3 corridas consecutivas de CI
+
+**Labels:** `test` `quality` `rubrica-4.1` `rubrica-4.2` `rubrica-4.4`
+**Estimación:** 1 día
+
+---
+
+## Issue 9 — docs: Postman Collection v1 con flujos completos y variables (Semana 10)
+
+> **Spec-driven** · Entregable obligatorio Semana 10.
+
+### 1. Context
+La rúbrica de Semana 10 exige un archivo `postman_collection.json` en la raíz con todos los endpoints, variables y autorización configurada. Hoy no existe.
+
+### 2. Problem
+Sin colección Postman no se puede defender la API en la entrega ni demostrar los flujos al evaluador.
+
+### 3. Goals
+- **G1** Archivo `postman_collection.json` en raíz, importable con un click.
+- **G2** Environment `streakstudy.postman_environment.json` con variables: `baseUrl`, `accessToken`, `institutionId`, `userId`, `deckId`, `flashcardId`.
+- **G3** Autorización Bearer Token a nivel de colección con `{{accessToken}}`.
+- **G4** Scripts post-response que guarden `accessToken` automáticamente tras login/register.
+- **G5** Ejemplos guardados (Postman "Examples") para happy path y error 4xx por endpoint.
+- **G6** Flujo end-to-end documentado como **Postman Runner**: register → login → create course → create deck → create flashcard → finish review → leaderboard.
+
+### 4. Non-goals
+- Tests de carga (Newman load).
+- Mocks de Postman.
+- CI con Newman (issue separado si se quiere).
+
+### 5. Specification
+
+#### 5.1 Estructura de carpetas dentro de la colección
+```
+StreakStudy API v1
+├── 00 — Health
+│   └── GET /api/v1/health
+├── 01 — Auth
+│   ├── POST /register (script: guarda accessToken)
+│   ├── POST /login (script: guarda accessToken)
+│   └── GET /me
+├── 02 — Institutions
+│   ├── POST /institutions
+│   └── GET /institutions/{id}
+├── 03 — Courses (CRUD)
+├── 04 — Decks (CRUD)
+├── 05 — Flashcards (CRUD)
+├── 06 — Documents (upload PDF + status + flashcards job)
+├── 07 — User Progress
+│   ├── POST /users/me/progress/review
+│   └── GET /users/me/progress
+├── 08 — Leaderboard
+├── 09 — Store
+│   ├── POST /store/streak-freeze
+│   └── POST /store/badges
+└── 10 — Errors (ejemplos 400/401/403/404/409)
+```
+
+#### 5.2 Variables del environment
+| Variable | Valor inicial | Uso |
+|---|---|---|
+| `baseUrl` | `http://localhost:8080` | Prefijo de URLs |
+| `accessToken` | (vacío, lo llena el script) | Bearer |
+| `institutionId` | `1` | Foreign key en register |
+| `userId` | (vacío, lo llena el script) | — |
+| `deckId` | (vacío, lo llena el script) | Cadena de tests |
+
+#### 5.3 Script de ejemplo (post-response en login)
+```javascript
+pm.test("status 200", () => pm.response.to.have.status(200));
+const body = pm.response.json();
+pm.environment.set("accessToken", body.accessToken);
+pm.environment.set("userId", body.user.id);
+```
+
+### 6. Acceptance Criteria
+- **AC1** Importar colección + environment en Postman → no hay errores de variables sin resolver.
+- **AC2** Correr "00→09" en Runner con DB vacía → todos los pasos verdes.
+- **AC3** Cada endpoint tiene al menos 1 "Saved Example" de respuesta exitosa y 1 de error.
+- **AC4** El Bearer se renueva automáticamente al re-ejecutar el endpoint de login.
+- **AC5** La colección se referencia desde el README (`## API Documentation`).
+
+### 7. Test Plan
+- Ejecutar `Runner` localmente contra `docker compose up` limpio.
+- Validar que las **15 respuestas guardadas** se renderizan en el visor.
+- Pedir a 1 compañero importar y correr el Runner como prueba de portabilidad.
+
+### 8. Rollout
+1. Iterar la colección a medida que cambia la API.
+2. Una vez mergeado el issue API hardening (`/api/v1`), regenerar URLs.
+3. Subir al PR un screenshot del Runner verde.
+
+### 9. Risks
+| Riesgo | Mitigación |
+|---|---|
+| URLs `/api/...` cambian a `/api/v1/...` antes del merge | Mergear este issue **después** del de API hardening (#2) |
+| Token expirado durante Runner | Renovar `accessToken` en pre-request script del folder protegido |
+| Datos residuales rompen el flow | Usar emails con timestamp (`test+{{$timestamp}}@x.com`) |
+
+### 10. Definition of Done
+- [x] `postman_collection.json` y `streakstudy.postman_environment.json` en raíz
+- [x] Runner verde end-to-end
+- [x] README enlaza colección con badge "Run in Postman"
+- [x] Screenshot del Runner adjunto al PR
+
+**Labels:** `docs` `postman` `entregable-s10`
+**Estimación:** 4h
+
+---
+
+## Issue 10 — chore: SLF4J logging, cleanup de TestStreakController y README de entrega
+
+> **Spec-driven** · Bonus logging + rúbrica §10.1 (README) + calidad general.
+
+### 1. Context
+- `JwtAuthenticationFilter` usa `System.out.println` + `printStackTrace` para errores.
+- `TestStreakController` parece de debug — no debería estar en producción.
+- README necesita secciones nuevas (Eventos, Email, CI badge, link deployment, matriz de roles).
+
+### 2. Problem
+1. Logs no estructurados rompen el bonus "Logging SLF4J + Logback" de la rúbrica.
+2. Endpoints de testing en producción son superficie de ataque.
+3. README incompleto baja §10.1 a 0.3 en lugar de 0.4.
+
+### 3. Goals
+- **G1** Reemplazar todo `System.out.println` y `printStackTrace` por SLF4J (`@Slf4j` o `LoggerFactory`).
+- **G2** Eliminar `TestStreakController` o restringirlo a perfil `dev` con `@Profile("dev")`.
+- **G3** Configurar Logback con patrón estructurado y niveles por paquete en `logback-spring.xml`.
+- **G4** Actualizar README con: badges (CI, license), sección "Eventos y Email", sección "GitHub Actions", sección "Roles y Permisos", link al deployment, link Swagger/Postman.
+- **G5** Verificar que `application.properties` no tiene `spring.jpa.show-sql=true` por default (ruido en logs).
+
+### 4. Non-goals
+- ELK/Loki/observabilidad externa.
+- Tracing distribuido (Sleuth/Zipkin).
+- Logs JSON para producción (bonus opcional).
+
+### 5. Specification
+
+#### 5.1 Sustituciones de logging
+| Archivo | Antes | Después |
+|---|---|---|
+| `JwtAuthenticationFilter.java` | `System.out.println("...")` + `printStackTrace()` | `log.warn("JWT auth failed: {}", ex.getMessage())` (sin stack en WARN, en DEBUG sí) |
+| `DocumentProcessingService.java` (catch genérico) | nada (silencioso) | `log.error("PDF processing failed for doc={}", documentId, e)` |
+
+#### 5.2 `logback-spring.xml`
+```xml
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern></encoder>
+  </appender>
+  <logger name="com.streakstudy" level="DEBUG"/>
+  <logger name="org.hibernate.SQL" level="WARN"/>
+  <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+</configuration>
+```
+
+#### 5.3 `TestStreakController` decision
+Opción A (recomendada): eliminar.
+Opción B: anotar `@Profile("dev")` para que solo cargue en local.
+
+#### 5.4 README — secciones a agregar
+```md
+## CI/CD
+![CI](.../ci.yml/badge.svg) — corre en cada PR.
+
+## Eventos y Email
+Sistema de eventos basado en `ApplicationEvent` con listeners async (ver issue #4).
+
+## Roles y Permisos
+| Rol | Endpoints accesibles |
+|---|---|
+| STUDENT | review, store, leaderboard |
+| INSTRUCTOR | + courses, decks, flashcards |
+| ADMIN | + institutions |
+
+## Deployment
+- API: https://streakstudy.onrender.com (o el que corresponda)
+- Swagger: https://streakstudy.onrender.com/swagger-ui.html
+- Postman: [colección](./postman_collection.json)
+
+## Equipo
+- ... (verificar nombres)
+```
+
+### 6. Acceptance Criteria
+- **AC1** `grep -r "System.out.println\|printStackTrace" src/main/` devuelve 0 resultados.
+- **AC2** `TestStreakController` eliminado o con `@Profile("dev")`.
+- **AC3** `logback-spring.xml` presente; logs en `INFO` por default, `DEBUG` para `com.streakstudy`.
+- **AC4** README tiene ≥ 8 secciones listadas en G4.
+- **AC5** Badges en README renderizan correctamente en GitHub.
+- **AC6** Equipo y licencia documentados.
+
+### 7. Test Plan
+- Manual: arrancar app, generar registro fallido, verificar log estructurado en consola.
+- `grep` automatizado en CI (script de pre-commit opcional).
+- Renderizar README en GitHub y revisar visual.
+
+### 8. Rollout
+- Último issue en mergearse (depende de #1, #2, #3, #4, #5, #6, #7 para que los links del README apunten a algo real).
+
+### 9. Risks
+| Riesgo | Mitigación |
+|---|---|
+| Logs de prod muy verbosos | `<logger name="com.streakstudy" level="INFO"/>` en profile prod |
+| Eliminar `TestStreakController` rompe demo | Confirmar con equipo que no es usado |
+
+### 10. Definition of Done
+- [ ] 0 ocurrencias de `System.out.println` en `src/main/`
+- [ ] `TestStreakController` resuelto (eliminar o `@Profile`)
+- [ ] `logback-spring.xml` activo
+- [ ] README final con 8+ secciones + badges + links
+- [ ] PR final con checklist completa de los 10 issues del proyecto
+
+**Labels:** `chore` `docs` `logging` `rubrica-10.1`
+**Estimación:** 2h
 
 ---
 
