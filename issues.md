@@ -1,30 +1,31 @@
-# Backlog Sprint Final — 9 Issues Spec-Driven
+# Backlog Sprint Final — 10 Issues Spec-Driven
 
-> Backlog versionado de los 9 issues necesarios para cerrar todas las brechas
+> Backlog versionado de los issues necesarios para cerrar todas las brechas
 > de la **rúbrica CS 2031 (Semana 9/10)**. Cada sección es un issue completo
 > y autocontenido, listo para copiarse a GitHub.
 >
 > **Punto de partida estimado:** ~15-16 / 20
-> **Punto objetivo tras ejecutar los 9:** ~19-20 / 20
+> **Punto objetivo tras ejecutar los 9 core:** ~19-20 / 20
 > **Esfuerzo total:** 5-7 días-persona
 
 ---
 
 ## Tabla de seguimiento
 
-| # | Issue | Rúbrica | Pts en juego | Esfuerzo | GH Issue # |
+| # | Issue | Rúbrica | Pts en juego | Esfuerzo | Estado |
 |---|---|---|---|---|---|
-| 1 | Sistema de eventos + email | 8.1 + 8.3 | ~1.5 | 1-2 días | _por crear_ |
-| 2 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | _por crear_ |
-| 3 | GitHub Actions CI | §10 + bonus | ~0.3 | 3h | _por crear_ |
-| 4 | API hardening (/v1, CORS, path, HMNR) | 5.2, 6.1, 7.1 | ~0.6 | 4h | _por crear_ |
+| 1 | ~~Sistema de eventos + email~~ | 8.1 + 8.3 | ~1.5 | 1-2 días | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
+| 2 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | ✅ implementado |
+| 3 | ~~GitHub Actions CI~~ | §10 + bonus | ~0.3 | 3h | ✅ mergeado [#40](https://github.com/btoroled/DBP/pull/40) |
+| 4 | ~~API hardening (/v1, CORS, path, HMNR)~~ | 5.2, 6.1, 7.1 | ~0.6 | 4h | ✅ implementado (branch `api-v1-cors-error-handler`, PR pendiente) |
 | 5 | Swagger/OpenAPI | Bonus | ~0.3 | 2h | _por crear_ |
 | 6 | Refresh tokens + UserDetailsService | 6.2 | ~0.3 | 4h | _por crear_ |
 | 7 | @PreAuthorize + validaciones DTO | 1.3, 6.3 | ~0.5 | 4h | _por crear_ |
 | 8 | Tests faltantes (Deck, Flashcard, Doc, Job) | 4.1, 4.2, 4.4 | ~0.8 | 1 día | _por crear_ |
 | 9 | Logging SLF4J + cleanup + README final | 10.1 + bonus | ~0.2 | 2h | _por crear_ |
+| 10 | Password reset por email | Extensión §6.2 + §8.3 | ~0.2 (bonus) | 4-6h | _por crear_ |
 
-**Orden de mergeo sugerido:** #3 → #4 → #6 → #1 → #7 → #5 → #8 → #2 → #9
+**Orden de mergeo sugerido:** ~~#3~~ → ~~#4~~ → #6 → ~~#1~~ → #10 → #7 → #5 → #8 → ~~#2~~ → #9
 
 ---
 
@@ -1008,6 +1009,228 @@ Sistema de eventos basado en `ApplicationEvent` con listeners async (ver issue #
 
 **Labels:** `chore` `docs` `logging` `rubrica-10.1`
 **Estimación:** 2h
+
+---
+
+## Issue 10 — feat: Recuperación de contraseña por email (forgot/reset)
+
+> **Spec-driven** · Extiende §6.2 (Autenticación) y §8.3 (Email). Depende del Issue #1 (eventos + email).
+
+### 1. Context
+StreakStudy permite registro y login (`AuthService`), pero no hay flujo para
+recuperar la contraseña cuando el usuario la olvida. El Issue #1 ya provee la
+infraestructura de eventos + plantillas Thymeleaf + `EmailSenderPort`, por lo
+que este issue se apoya en ese tooling para el canal de envío.
+
+### 2. Problem
+1. Si un estudiante olvida su contraseña, hoy la única opción es pedirle al
+   administrador que lo borre/recree — fricción inaceptable.
+2. Ningún endpoint actual permite cambiar contraseña sin conocer la previa.
+3. Sin token de un solo uso almacenado en BD, un esquema basado solo en JWT
+   sería vulnerable a replay.
+
+### 3. Goals
+- **G1** Endpoint `POST /api/v1/auth/password/forgot` que recibe `{email}` y
+  responde **siempre 202** (no revelar si el email existe — anti-enumeration).
+- **G2** Endpoint `POST /api/v1/auth/password/reset` que recibe
+  `{token, newPassword}` y, si el token es válido y no expiró, rotea el
+  `passwordHash`.
+- **G3** Tabla `password_reset_tokens` con `token_hash` (SHA-256), `expires_at`,
+  `used_at`, `user_id`. **Nunca** almacenar el token en claro.
+- **G4** `PasswordResetRequestedEvent` publicado tras persistir el token; un
+  listener async (`emailExecutor`) renderiza la plantilla
+  `password-reset.html` con el link `${frontendUrl}/reset?token=...` y lo
+  envía con `EmailSenderPort` (reusa Issue #1).
+- **G5** Al solicitar un nuevo reset, **invalidar tokens previos** del mismo
+  usuario que sigan activos (rotación). Tras usar un token, marcarlo
+  `used_at = now()`.
+- **G6** Rate limiting suave: máximo 5 requests a `/forgot` por email por hora
+  (in-memory Caffeine cache o bucket por email). Sin esto, un atacante puede
+  enviar spam SMTP.
+
+### 4. Non-goals
+- Recuperación por SMS / 2FA.
+- "Magic link login" (login sin password).
+- Notificación al usuario cuando el password fue cambiado (puede ser un
+  follow-up: `PasswordChangedEvent` + email "Tu contraseña fue actualizada").
+- UI/frontend del flujo (lo construye el equipo de frontend).
+
+### 5. Specification
+
+#### 5.1 Paquetes nuevos
+```
+application/dto/{ForgotPasswordRequest,ResetPasswordRequest}.java
+application/event/PasswordResetRequestedEvent.java
+domain/model/PasswordResetToken.java
+domain/repository/PasswordResetTokenRepository.java
+domain/exception/{InvalidPasswordResetTokenException,PasswordResetTokenExpiredException}.java
+application/service/PasswordResetService.java
+infrastructure/persistence/entity/PasswordResetTokenJpa.java
+infrastructure/persistence/repository/PasswordResetTokenJpaRepository.java
+infrastructure/persistence/adapter/PasswordResetTokenRepositoryAdapter.java
+infrastructure/persistence/mapper/PasswordResetTokenMapper.java
+infrastructure/event/listener/PasswordResetEmailListener.java
+resources/templates/email/password-reset.html
+```
+
+#### 5.2 Entidad `PasswordResetTokenJpa`
+```java
+@Entity @Table(name = "password_reset_tokens",
+  indexes = {
+    @Index(name="ix_pwreset_user", columnList="user_id"),
+    @Index(name="ix_pwreset_hash", columnList="token_hash", unique=true)
+  })
+public class PasswordResetTokenJpa { ... }
+```
+Campos: `id`, `userId`, `tokenHash` (char(64) hex), `expiresAt`, `usedAt`,
+`createdAt`. **NO** almacena el plaintext.
+
+#### 5.3 Generación del token
+```java
+String plain = UUID.randomUUID() + "-" + UUID.randomUUID(); // 72+ chars
+String hash  = sha256Hex(plain);
+// persistir hash; devolver plain al listener via evento
+```
+
+#### 5.4 Endpoints
+
+```http
+POST /api/v1/auth/password/forgot
+Body: { "email": "alice@utec.edu" }
+202: (sin body — respuesta genérica siempre)
+```
+
+```http
+POST /api/v1/auth/password/reset
+Body: { "token": "<plain>", "newPassword": "Nueva123!" }
+204: No Content
+400: { "error": "invalid_password_reset_token", ... }
+410: { "error": "password_reset_token_expired", ... }
+```
+
+#### 5.5 `PasswordResetService.requestReset`
+```java
+@Transactional
+public void requestReset(String email) {
+    userRepository.findByEmail(email).ifPresent(user -> {
+        tokens.invalidateAllActiveFor(user.id()); // rotación
+        String plain = newPlainToken();
+        String hash  = sha256Hex(plain);
+        Instant exp  = Instant.now().plus(Duration.ofMinutes(30));
+        tokens.save(new PasswordResetToken(null, user.id(), hash, exp, null, Instant.now()));
+        eventPublisher.publishEvent(new PasswordResetRequestedEvent(
+            user.id(), user.email(), user.fullName(), plain, exp));
+    });
+    // Nota: NO se loggea si el email no existe (anti-enumeration).
+}
+```
+
+#### 5.6 `PasswordResetService.confirmReset`
+```java
+@Transactional
+public void confirmReset(String plainToken, String newPassword) {
+    String hash = sha256Hex(plainToken);
+    PasswordResetToken t = tokens.findByTokenHash(hash)
+        .orElseThrow(InvalidPasswordResetTokenException::new);
+    if (t.usedAt() != null) throw new InvalidPasswordResetTokenException();
+    if (t.expiresAt().isBefore(Instant.now())) throw new PasswordResetTokenExpiredException();
+
+    User user = userRepository.findById(t.userId()).orElseThrow(InvalidPasswordResetTokenException::new);
+    userRepository.save(user.withPasswordHash(passwordHasher.hash(newPassword)));
+    tokens.markUsed(t.id(), Instant.now());
+}
+```
+
+Nota: requiere agregar `User.withPasswordHash(String)` al dominio (factory
+copy method, manteniendo la inmutabilidad del record/clase actual).
+
+#### 5.7 `PasswordResetEmailListener`
+```java
+@Async("emailExecutor")
+@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+public void onPasswordResetRequested(PasswordResetRequestedEvent event) {
+    String link = frontendUrl + "/reset-password?token=" + event.plainToken();
+    emailSender.sendHtml(event.email(), "Restablece tu contraseña",
+        "password-reset", Map.of(
+            "fullName", event.fullName(),
+            "resetLink", link,
+            "expiresInMinutes", 30));
+}
+```
+
+#### 5.8 Plantilla `password-reset.html`
+HTML simple con saludo personalizado, un CTA prominente con el link, el TTL
+en minutos y una nota de seguridad: "si no fuiste tú, ignora este mensaje".
+
+#### 5.9 Configuración
+```properties
+app.password-reset.token-ttl-minutes=${PASSWORD_RESET_TTL_MIN:30}
+app.password-reset.frontend-url=${FRONTEND_URL:http://localhost:5173}
+```
+
+### 6. Acceptance Criteria
+
+- **AC1** `POST /api/v1/auth/password/forgot` con email existente →
+  **202** + email enviado con link válido.
+- **AC2** `POST /api/v1/auth/password/forgot` con email **no** existente →
+  **202** (idéntica respuesta, sin email enviado, sin log que revele
+  inexistencia).
+- **AC3** `POST /api/v1/auth/password/reset` con token válido + password
+  válido → **204** + el usuario puede loguearse con la nueva password.
+- **AC4** Token usado dos veces → segundo intento devuelve
+  **400 `invalid_password_reset_token`**.
+- **AC5** Token vencido (>30 min) → **410 `password_reset_token_expired`**.
+- **AC6** Solicitar `/forgot` dos veces seguidas: el primer token queda
+  inválido al emitirse el segundo (rotación).
+- **AC7** El plain token **nunca** aparece en logs ni en BD; solo el
+  SHA-256 en `token_hash`.
+- **AC8** Rate limit: la sexta solicitud `/forgot` para el mismo email en
+  una hora → **429 Too Many Requests** (sin enviar email).
+- **AC9** Login con la password anterior tras un reset exitoso → **401
+  `invalid_credentials`**.
+
+### 7. Test Plan
+- Unit: `PasswordResetServiceTest` (rotación, token usado, expiración,
+  hash determinista, anti-enumeration).
+- Unit: `PasswordResetEmailListenerTest` con `EmailSenderPort` mockeado.
+- Repo: `PasswordResetTokenRepositoryAdapterTest` (@DataJpaTest H2).
+- Web: `AuthControllerPasswordResetTest` (MockMvc): AC1-AC5, AC8, AC9.
+- Event: `@RecordApplicationEvents` para verificar que `forgot` publica
+  exactamente un `PasswordResetRequestedEvent` por email existente y **cero**
+  por email inexistente.
+- Integración: extensión opcional del `EmailIntegrationTest` (GreenMail) con
+  el flujo password-reset end-to-end.
+
+### 8. Rollout
+1. Mergear **después** del Issue #1 (necesita `EmailSenderPort` + listeners async).
+2. Coordinar con frontend: la ruta del CTA en el email debe coincidir con
+   la ruta real del frontend (`/reset-password?token=...`).
+3. Documentar las dos rutas nuevas en README + Postman + Swagger.
+4. Si el deploy está vivo, activar `MAIL_ENABLED=true` y validar primero
+   con un usuario interno antes de comunicar el feature.
+
+### 9. Risks
+
+| Riesgo | Mitigación |
+|---|---|
+| User enumeration vía latencia (existente vs no existente difieren en ms) | Llamar siempre a `passwordHasher.hash("dummy")` en branch "no existe" para nivelar timing |
+| Tokens viven para siempre si no se limpian | Job nocturno (`@Scheduled`) que borra `used_at IS NOT NULL OR expires_at < now()` (opcional, fuera de scope) |
+| Spam SMTP | Rate limit por email (AC8) + `MAIL_ENABLED=false` en CI |
+| Leak del link por reenvío del email | TTL corto (30 min) + un solo uso |
+| BCrypt cost alto bloquea el hilo HTTP en `forgot` | Mantener el hashing dummy en el mismo executor (sigue siendo síncrono dentro del request — OK con cost 10) |
+
+### 10. Definition of Done
+- [ ] Tabla `password_reset_tokens` creada
+- [ ] 2 endpoints (`/forgot`, `/reset`) + DTOs validados
+- [ ] `PasswordResetService` con rotación, expiración y un solo uso
+- [ ] `PasswordResetRequestedEvent` + listener async + plantilla Thymeleaf
+- [ ] Rate limiting in-memory
+- [ ] Tests AC1-AC9
+- [ ] README + Postman + Swagger actualizados
+
+**Labels:** `feature` `security` `auth` `email` `rubrica-6.2` `rubrica-8.3`
+**Estimación:** 4-6h
+**Depends on:** Issue #1 (eventos + email)
 
 ---
 
