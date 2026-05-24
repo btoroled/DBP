@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.streakstudy.domain.exception.BadgeAlreadyOwnedException;
 import com.streakstudy.domain.exception.InsufficientXpException;
@@ -32,6 +33,7 @@ import jakarta.persistence.EntityNotFoundException;
 class StoreServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock ApplicationEventPublisher events;
     @InjectMocks StoreService service;
 
     @Test

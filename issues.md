@@ -1011,12 +1011,5 @@ Sistema de eventos basado en `ApplicationEvent` con listeners async (ver issue #
 
 ---
 
-## Apéndice — Cómo usar este backlog
-
-1. **Abrir GitHub → New Issue.**
-2. Copiar el bloque del issue completo (desde el `##` hasta antes del `---` siguiente).
-3. El primer `##` es el título; el resto va al body.
-4. Al crear, anotar el `#NN` resultante en la tabla de seguimiento arriba.
-5. Asignar al responsable según especialidad (backend, testing, docs).
 
 **Mantener este archivo actualizado:** cuando se cierre un issue, taquearlo en la tabla con `~~tachado~~` y el link al PR mergeado.

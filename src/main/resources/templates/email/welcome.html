@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenido a StreakStudy</title>
+</head>
+<body style="font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.5;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
+        <h1 style="color: #4f46e5;">Bienvenido a StreakStudy</h1>
+        <p>Hola <strong th:text="${fullName}">Estudiante</strong>,</p>
+        <p>
+            Gracias por unirte a StreakStudy. Tu cuenta
+            <span th:text="${email}">tu@email.com</span> esta lista para que
+            empieces a estudiar, ganar XP y mantener tu racha diaria.
+        </p>
+        <p>
+            Sube tu primer PDF, genera flashcards con IA y compite en el
+            leaderboard de tu institucion.
+        </p>
+        <p style="margin-top: 32px; color: #6b7280; font-size: 12px;">
+            Si no creaste esta cuenta, ignora este mensaje.
+        </p>
+    </div>
+</body>
+</html>
