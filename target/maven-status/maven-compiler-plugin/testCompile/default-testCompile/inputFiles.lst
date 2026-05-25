@@ -23,8 +23,10 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/event/WelcomeEmailListenerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/AiGenerationJobRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/CourseRepositoryAdapterTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/DeckRepositoryAdapterPostgresContainerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/DeckRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/DocumentRepositoryAdapterTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/FlashcardRepositoryAdapterPostgresContainerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/FlashcardRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/InstitutionRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/MultiTenancyIsolationTest.java
@@ -41,6 +43,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/AuthControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/CourseControllerAuthorizationTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/CourseControllerTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/DeckControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/DocumentControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/FlashcardControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/InstitutionControllerTest.java

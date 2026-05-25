@@ -1,7 +1,9 @@
 package com.streakstudy.application.service;
 
 import com.streakstudy.application.dto.AiGenerationJobResponse;
+import com.streakstudy.application.dto.DocumentStatusResponse;
 import com.streakstudy.application.dto.DocumentUploadResponse;
+import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.model.*;
 import com.streakstudy.domain.repository.AiGenerationJobRepository;
 import com.streakstudy.domain.repository.DocumentRepository;
@@ -17,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -120,5 +123,188 @@ class DocumentServiceTest {
         assertThatThrownBy(() -> documentService.triggerGeneration(1L, 2L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("ya fueron generadas");
+    }
+
+    @Test
+    void shouldThrowWhenUploadingEmptyFile() {
+        MockMultipartFile empty = new MockMultipartFile(
+                "file", "empty.pdf", "application/pdf", new byte[0]);
+
+        assertThatThrownBy(() -> documentService.upload(empty, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("vacío");
+    }
+
+    @Test
+    void shouldThrowWhenUploadingFileBeyondMaxSize() {
+        // size limit is 20 MB; we provide content of length 21 MB
+        byte[] huge = new byte[21 * 1024 * 1024];
+        MockMultipartFile big = new MockMultipartFile(
+                "file", "huge.pdf", "application/pdf", huge);
+
+        assertThatThrownBy(() -> documentService.upload(big, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("20 MB");
+    }
+
+    @Test
+    void shouldThrowWhenUploadingFileWithNullContentType() {
+        MockMultipartFile nullCt = new MockMultipartFile(
+                "file", "x.pdf", null, new byte[10]);
+
+        assertThatThrownBy(() -> documentService.upload(nullCt, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("PDF");
+    }
+
+    @Test
+    void shouldReturnDocumentStatusWhenFound() {
+        Document doc = new Document(3L, 1L, 5L, "n.pdf", 10, "h",
+                DocumentStatus.READY, "markdown body", null);
+        when(documentRepository.findById(3L)).thenReturn(Optional.of(doc));
+
+        DocumentStatusResponse resp = documentService.getStatus(3L);
+
+        assertThat(resp.documentId()).isEqualTo(3L);
+        assertThat(resp.originalFilename()).isEqualTo("n.pdf");
+        assertThat(resp.status()).isEqualTo(DocumentStatus.READY);
+        assertThat(resp.markdownAvailable()).isTrue();
+    }
+
+    @Test
+    void shouldReportNoMarkdownInStatusWhenContentIsNull() {
+        Document doc = new Document(4L, 1L, 5L, "p.pdf", 10, "h",
+                DocumentStatus.PENDING, null, null);
+        when(documentRepository.findById(4L)).thenReturn(Optional.of(doc));
+
+        DocumentStatusResponse resp = documentService.getStatus(4L);
+
+        assertThat(resp.markdownAvailable()).isFalse();
+    }
+
+    @Test
+    void shouldThrowEntityNotFoundWhenGettingStatusOfMissingDocument() {
+        when(documentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.getStatus(404L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void shouldReturnMarkdownWhenDocumentHasContent() {
+        Document doc = new Document(7L, 1L, 5L, "d.pdf", 10, "h",
+                DocumentStatus.READY, "# Heading", null);
+        when(documentRepository.findById(7L)).thenReturn(Optional.of(doc));
+
+        String md = documentService.getMarkdown(7L);
+
+        assertThat(md).isEqualTo("# Heading");
+    }
+
+    @Test
+    void shouldThrowWhenGettingMarkdownThatIsNotReady() {
+        Document doc = new Document(8L, 1L, 5L, "d.pdf", 10, "h",
+                DocumentStatus.PENDING, null, null);
+        when(documentRepository.findById(8L)).thenReturn(Optional.of(doc));
+
+        assertThatThrownBy(() -> documentService.getMarkdown(8L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("aún no está disponible");
+    }
+
+    @Test
+    void shouldThrowEntityNotFoundWhenGettingMarkdownOfMissingDocument() {
+        when(documentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.getMarkdown(404L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void shouldThrowEntityNotFoundWhenTriggeringGenerationForMissingDocument() {
+        when(documentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.triggerGeneration(404L, 1L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void shouldThrowWhenTriggeringGenerationOnDocumentNotReady() {
+        Document doc = new Document(9L, 1L, 5L, "p.pdf", 10, "h",
+                DocumentStatus.PROCESSING, null, null);
+        when(documentRepository.findById(9L)).thenReturn(Optional.of(doc));
+
+        assertThatThrownBy(() -> documentService.triggerGeneration(9L, 2L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no está listo");
+    }
+
+    @Test
+    void shouldReturnJobStatusWhenJobExists() {
+        AiGenerationJob job = new AiGenerationJob(50L, 11L, 22L,
+                AiGenerationJobStatus.RUNNING, "anthropic", "model",
+                100, 200, 0.002, null, null, null);
+        when(jobRepository.findById(50L)).thenReturn(Optional.of(job));
+
+        AiGenerationJobResponse resp = documentService.getJobStatus(50L);
+
+        assertThat(resp.jobId()).isEqualTo(50L);
+        assertThat(resp.documentId()).isEqualTo(11L);
+        assertThat(resp.deckId()).isEqualTo(22L);
+        assertThat(resp.status()).isEqualTo(AiGenerationJobStatus.RUNNING);
+        assertThat(resp.totalInputTokens()).isEqualTo(100);
+        assertThat(resp.totalOutputTokens()).isEqualTo(200);
+        assertThat(resp.estimatedCostUsd()).isEqualTo(0.002);
+    }
+
+    @Test
+    void shouldThrowEntityNotFoundWhenGettingMissingJobStatus() {
+        when(jobRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.getJobStatus(999L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void shouldReturnFlashcardsWhenCompletedJobExistsForDocument() {
+        Document doc = new Document(20L, 1L, 5L, "x.pdf", 10, "h",
+                DocumentStatus.READY, "txt", null);
+        AiGenerationJob job = new AiGenerationJob(60L, 20L, 33L,
+                AiGenerationJobStatus.COMPLETED, "anthropic", "model",
+                10, 20, 0.001, null, null, null);
+        Flashcard fc = Flashcard.newInstance(1L, 33L, "Q", "A", Difficulty.EASY);
+
+        when(documentRepository.findById(20L)).thenReturn(Optional.of(doc));
+        when(jobRepository.findByDocumentIdAndStatus(20L, AiGenerationJobStatus.COMPLETED))
+                .thenReturn(Optional.of(job));
+        when(flashcardRepository.findAllByDeckIdAndInstitutionId(33L, 1L))
+                .thenReturn(List.of(fc));
+
+        List<Flashcard> result = documentService.getFlashcards(20L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).deckId()).isEqualTo(33L);
+    }
+
+    @Test
+    void shouldReturnEmptyFlashcardListWhenNoCompletedJobForDocument() {
+        Document doc = new Document(21L, 1L, 5L, "x.pdf", 10, "h",
+                DocumentStatus.READY, "txt", null);
+        when(documentRepository.findById(21L)).thenReturn(Optional.of(doc));
+        when(jobRepository.findByDocumentIdAndStatus(21L, AiGenerationJobStatus.COMPLETED))
+                .thenReturn(Optional.empty());
+
+        List<Flashcard> result = documentService.getFlashcards(21L);
+
+        assertThat(result).isEmpty();
+        verify(flashcardRepository, never()).findAllByDeckIdAndInstitutionId(any(), any());
+    }
+
+    @Test
+    void shouldThrowEntityNotFoundWhenGettingFlashcardsForMissingDocument() {
+        when(documentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.getFlashcards(404L))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 }
