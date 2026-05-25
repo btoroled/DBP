@@ -2,235 +2,178 @@
 
 Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arquitectura hexagonal. Soporta multitenancy a nivel de institución educativa.
 
+[![CI](https://github.com/btoroled/DBP/actions/workflows/ci.yml/badge.svg)](https://github.com/btoroled/DBP/actions/workflows/ci.yml)
+
+**Curso:** CS 2031 Desarrollo Basado en Plataformas
+**Integrantes:** 
+* Benjamin Toro Leddihn
+* Valentina Celeste Alvarez Beraun
+* Daniel Sandoval Toro
+* Alexander Leon Pantaleon
+* Gloria Alfaro Quispe
 ---
 
 ## Tabla de Contenidos
 
-- [Descripción General](#descripción-general)
-- [Arquitectura](#arquitectura)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Dominio del Negocio](#dominio-del-negocio)
-- [API REST](#api-rest)
-- [Multitenancy](#multitenancy)
-- [Seguridad y Autenticación](#seguridad-y-autenticación)
-- [Configuración](#configuración)
-- [Ejecución con Docker](#ejecución-con-docker)
-- [Ejecución Local](#ejecución-local)
-- [Tests](#tests)
-- [Equipo](#equipo)
+1. [Introducción](#1-introducción)
+2. [Identificación del Problema o Necesidad](#2-identificación-del-problema-o-necesidad)
+3. [Descripción de la Solución](#3-descripción-de-la-solución)
+4. [Modelo de Entidades](#4-modelo-de-entidades)
+5. [Testing y Manejo de Errores](#5-testing-y-manejo-de-errores)
+6. [Medidas de Seguridad Implementadas](#6-medidas-de-seguridad-implementadas)
+7. [Eventos y Asincronía](#7-eventos-y-asincronía)
+8. [GitHub & Management](#8-github--management)
+9. [Instalación y Despliegue](#9-instalación-y-despliegue)
+10. [Conclusión](#10-conclusión)
+11. [Apéndices](#11-apéndices)
 
 ---
 
-## Descripción General
+## 1. Introducción
 
-StreakStudy API es el backend de una plataforma educativa gamificada. Cada institución educativa opera como un tenant aislado: sus usuarios y cursos no son visibles desde otros tenants. La autenticación es por JWT y el contexto de tenant se propaga automáticamente en cada request.
+**Contexto:** En el entorno educativo actual, las instituciones enfrentan el desafío de mantener a los estudiantes comprometidos con sus rutinas de estudio autónomo. Además, la creación de material de repaso estructurado (como flashcards) consume mucho tiempo, lo que desmotiva su uso.
 
----
+**Objetivos del Proyecto:**
+* Desarrollar una API RESTful escalable utilizando Arquitectura Hexagonal.
+* Implementar mecánicas de gamificación (rachas, puntos de experiencia y recompensas) para incentivar el estudio diario.
+* Automatizar la generación de material de estudio procesando documentos PDF mediante Inteligencia Artificial.
+* Garantizar la privacidad de los datos mediante una arquitectura Multi-Tenant estricta a nivel de base de datos.
 
-## Arquitectura
+## 2. Identificación del Problema o Necesidad
 
-El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
+**Descripción del Problema:** Los estudiantes universitarios tienden a abandonar los hábitos de estudio progresivo, recurriendo a sesiones intensivas y poco efectivas justo antes de los exámenes. Además, no tienen muchas herramientas que automaticen la creación de recursos de aprendizaje a partir de sus apuntes o sílabos oficiales.
 
+**Justificación:** Es relevante solucionar este problema porque la gamificación ha demostrado aumentar significativamente las tasas de retención de usuarios. Se utiliza la IA generativa para procesar PDFs automáticamente. Hacerlo bajo un modelo Multi-Tenant permite comercializar o distribuir el software a múltiples universidades asegurando que los datos de la "Universidad A" jamás se filtren a la "Universidad B".
+
+## 3. Descripción de la Solución
+
+El backend está diseñado bajo los principios de la **Arquitectura Hexagonal (Ports & Adapters)** para desacoplar la lógica de dominio de las implementaciones técnicas. > [Ver el detalle de la arquitectura y capas internas](docs/architecture.md).
+
+```mermaid
+flowchart TB
+
+    subgraph Infrastructure
+        WEB[Controllers / REST API]
+        SEC[Security JWT]
+        DB[(PostgreSQL)]
+        EXT[Anthropic API]
+    end
+
+    subgraph Application
+        SERVICES[Services / Use Cases]
+        DTO[DTOs]
+        PORTS[Ports]
+    end
+
+    subgraph Domain
+        ENTITIES[Entities]
+        REPOSITORIES[Repository Interfaces]
+        EXCEPTIONS[Domain Exceptions]
+    end
+
+    WEB --> SERVICES
+    SEC --> SERVICES
+    SERVICES --> PORTS
+    SERVICES --> REPOSITORIES
+    PORTS --> EXT
+    REPOSITORIES --> DB
 ```
-┌─────────────────────────────────────────────────────┐
-│                   INFRASTRUCTURE                    │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
-│  │   Web    │  │ Security │  │    Persistence      │ │
-│  │(Controllers│ │(JWT,BCrypt│ │ (JPA, Adapters,    │ │
-│  │  DTOs)   │  │ Config)  │  │  Mappers)          │ │
-│  └────┬─────┘  └─────┬────┘  └─────────┬──────────┘ │
-└───────┼──────────────┼────────────────┼─────────────┘
-        │              │                │
-┌───────▼──────────────▼────────────────▼─────────────┐
-│                   APPLICATION                       │
-│         Services  │  DTOs  │  Ports (Interfaces)   │
-└───────────────────┼──────────────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────────────┐
-│                    DOMAIN                           │
-│    Entities  │  Repositories  │  Exceptions         │
-│   (sin frameworks, Java puro)                       │
-└─────────────────────────────────────────────────────┘
-```
 
-**Capas:**
-- **Domain:** Entidades de negocio puras (sin anotaciones de frameworks).
-- **Application:** Casos de uso (Services) y puertos (interfaces).
-- **Infrastructure:** Implementaciones técnicas: JPA, JWT, BCrypt, controladores REST.
+**Funcionalidades Implementadas:**
+* **Motor Multi-Tenant:** Aislamiento lógico de usuarios, cursos y documentos por institución educativa.
+* **Gamificación:** Sistema de progresión donde los usuarios ganan XP, mantienen rachas diarias (streaks) y compran beneficios (Streak Freezes y Badges) en una tienda virtual.
+* **Procesamiento de PDF e IA Generativa:** Endpoint asíncrono que extrae texto de archivos PDF y consulta un LLM para generar automáticamente mazos de flashcards interactivos.
+* **API RESTful de Gestión:** CRUD completo para instituciones, cursos, mazos de flashcards y métricas de progreso de los estudiantes.> [Ver la referencia completa de endpoints y payloads JSON](docs/api-reference.md).
 
----
-
-## Stack Tecnológico
-
+**Tecnologías Utilizadas:**
 | Componente        | Tecnología                        |
 |-------------------|-----------------------------------|
 | Lenguaje          | Java 21                           |
 | Framework         | Spring Boot 3.4.5                 |
 | Persistencia      | Spring Data JPA + PostgreSQL 16   |
 | Seguridad         | Spring Security + JWT (JJWT 0.12) |
-| Build             | Maven 3.9                         |
-| Contenedores      | Docker + Docker Compose           |
-| Tests unitarios   | JUnit 5 + Mockito                 |
-| Tests integración | @DataJpaTest + H2                 |
+| IA Generativa     | Anthropic Claude Haiku (REST)     |
+| Build y Deploy    | Maven 3.9, Docker + Docker Compose|
 
----
+## 4. Modelo de Entidades
 
-## Estructura del Proyecto
+El dominio se divide en Entidades Globales (como `Institution` y catálogo de `RewardItems`) y Entidades Tenant-Aware (como `User`, `Course`, `Deck` y `Document`). El aislamiento se logra inyectando automáticamente el `institutionId` a través de un `TenantAwareEntityListener` de JPA, impidiendo cruces de información.
+```mermaid
+erDiagram
 
-```
-src/main/java/com/streakstudy/
-├── StreakStudyApplication.java
-├── domain/
-│   ├── model/
-│   │   ├── User.java
-│   │   ├── Course.java
-│   │   ├── Institution.java
-│   │   ├── UserRole.java          # Enum: STUDENT, TEACHER, INSTITUTION_ADMIN, SUPER_ADMIN
-│   │   └── TenantAware.java       # Interface marker para entidades con tenant
-│   ├── repository/
-│   │   ├── UserRepository.java
-│   │   ├── CourseRepository.java
-│   │   └── InstitutionRepository.java
-│   └── exception/
-│       ├── DomainException.java
-│       ├── EmailAlreadyExistsException.java
-│       ├── EntityNotFoundException.java
-│       ├── InvalidCredentialsException.java
-│       └── TenantViolationException.java
-├── application/
-│   ├── dto/                       # Request/Response records
-│   ├── service/
-│   │   ├── AuthService.java
-│   │   ├── CourseService.java
-│   │   └── InstitutionService.java
-│   └── port/
-│       ├── PasswordHasher.java
-│       └── TokenIssuer.java
-└── infrastructure/
-    ├── persistence/               # JPA entities, repositories, adapters, mappers
-    ├── security/                  # JwtService, JwtAuthenticationFilter, SecurityConfig
-    ├── tenancy/                   # TenantContext, TenantAwareJpaEntity, EntityListener
-    └── web/                       # Controllers, GlobalExceptionHandler
-```
+    INSTITUTION ||--o{ USER : contains
+    INSTITUTION ||--o{ COURSE : owns
 
----
+    USER ||--o{ DOCUMENT : uploads
+    USER ||--o{ DECK : creates
+    USER }o--o{ BADGE : earns
+    USER ||--o{ REFRESH_TOKEN : owns
 
-## Dominio del Negocio
+    DOCUMENT ||--o{ AI_GENERATION_JOB : triggers
 
-### Entidades
+    DECK ||--o{ FLASHCARD : contains
 
-| Entidad       | Tenant-Aware | Descripción                                        |
-|---------------|:------------:|----------------------------------------------------|
-| `Institution` | No (raíz)    | Institución educativa (`code`: "utec", "pucp")     |
-| `User`        | Sí           | Usuario con email globalmente único                |
-| `Course`      | Sí           | Curso perteneciente a una institución              |
+    COURSE ||--o{ DECK : includes
 
-### Roles de Usuario
+    USER {
+        long id
+        string email
+        string password
+        string role
+        int xp
+        int streak
+    }
 
-| Rol                  | Descripción                            |
-|----------------------|----------------------------------------|
-| `STUDENT`            | Alumno dentro de una institución       |
-| `TEACHER`            | Facilitador dentro de una institución  |
-| `INSTITUTION_ADMIN`  | Administrador de la institución        |
-| `SUPER_ADMIN`        | Administrador cross-tenant             |
+    INSTITUTION {
+        long id
+        string name
+        string code
+    }
 
----
+    DOCUMENT {
+        long id
+        string filename
+        string status
+        string sha256
+    }
 
-## API REST
-
-### Autenticación (`/api/auth`) — Pública
-
-| Método | Endpoint              | Descripción                     |
-|--------|-----------------------|---------------------------------|
-| POST   | `/api/auth/register`  | Registrar nuevo usuario         |
-| POST   | `/api/auth/login`     | Iniciar sesión, obtener JWT     |
-
-**Registro:**
-```json
-POST /api/auth/register
-{
-  "institutionId": 1,
-  "email": "alumno@utec.edu.pe",
-  "password": "12345678",
-  "fullName": "Juan Pérez"
-}
+    FLASHCARD {
+        long id
+        string question
+        string answer
+    }
 ```
 
-**Login:**
-```json
-POST /api/auth/login
-{
-  "email": "alumno@utec.edu.pe",
-  "password": "12345678"
-}
-```
+> [Ver el catálogo completo de entidades, roles y mecánicas](docs/entities.md).
 
-**Respuesta JWT:**
-```json
-{
-  "token": "eyJ...",
-  "expiresInSeconds": 3600,
-  "userId": 1,
-  "institutionId": 1,
-  "email": "alumno@utec.edu.pe",
-  "role": "STUDENT"
-}
-```
+## 5. Testing y Manejo de Errores
 
----
+**Niveles de Testing Realizados:**
+Se implementaron pruebas unitarias (JUnit 5 + Mockito) para aislar la lógica de negocio (como el cálculo de experiencia y rachas) y pruebas de integración (`@DataJpaTest` + H2/Testcontainers) para verificar las consultas a base de datos y el aislamiento estricto entre tenants.
 
-### Cursos (`/api/courses`) — Requiere JWT
+**Resultados:** La suite de pruebas garantiza que las excepciones de dominio se lancen correctamente y que los flujos asíncronos respondan de manera adecuada.
+> [Ver la matriz detallada de cobertura de pruebas](docs/testing.md).
 
-| Método | Endpoint            | Descripción                               |
-|--------|---------------------|-------------------------------------------|
-| POST   | `/api/courses`      | Crear curso (tenant actual)               |
-| GET    | `/api/courses`      | Listar cursos del tenant actual           |
-| GET    | `/api/courses/{id}` | Obtener curso por ID (solo tenant actual) |
-| DELETE | `/api/courses/{id}` | Eliminar curso (solo tenant actual)       |
+**Manejo de Errores (Excepciones Globales):**
+Para garantizar el funcionamiento correcto del sistema y ofrecer mensajes significativos en caso de un error, se centralizó el manejo de errores mediante un `GlobalExceptionHandler` utilizando el patrón `@ControllerAdvice`. Esto aísla la lógica de control de errores de los controladores REST y asegura que las trazas de los *stack traces* internos (que podrían exponer vulnerabilidades) nunca lleguen al cliente.
 
-**Crear curso:**
-```json
-POST /api/courses
-Authorization: Bearer <jwt>
+El sistema hereda de una clase base `DomainException` para estandarizar las validaciones de la capa de aplicación y dominio. Se manejan explícitamente estas excepciones críticas para proteger el modelo multi-tenant y mantener la integridad de los datos.
 
-{
-  "name": "Cálculo I",
-  "description": "Límites, derivadas e integrales"
-}
-```
+* **Excepciones de Seguridad y Aislamiento:**
+    * `TenantViolationException`: Es la excepción más crítica del sistema. Se lanza inmediatamente si un usuario intenta acceder, modificar o eliminar un recurso (como un curso o documento) cuyo `institutionId` no coincide con el suyo. Manejar esta excepción es vital para prevenir fugas de datos entre diferentes universidades.
+    * `InvalidCredentialsException`: Lanzada durante el flujo de autenticación para prevenir el acceso no autorizado sin revelar si el error provino del correo o de la contraseña, mitigando ataques de enumeración de usuarios.
 
----
+* **Excepciones de Economía y Gamificación:**
+  Manejar estas excepciones garantiza que los estudiantes no puedan vulnerar las reglas del sistema ni alterar su progreso de forma fraudulenta:
+    * `InsufficientXpException`: Bloquea las transacciones en la tienda virtual si el estudiante intenta adquirir recompensas sin haber completado suficientes sesiones de estudio para acumular la experiencia requerida.
+    * `BadgeAlreadyOwnedException`: Previene la compra duplicada de insignias.
+    * `MaxStreakFreezesReachedException`: Limita la acumulación excesiva de escudos protectores de racha, obligando al usuario a mantener el hábito de estudio diario en lugar de depender únicamente de los escudos.
 
-### Instituciones (`/api/institutions`) — Pública
+* **Excepciones de Integridad de Datos:**
+    * `EmailAlreadyExistsException`: Evita colisiones de identidad en la base de datos durante el registro de nuevos usuarios, garantizando la restricción `UNIQUE` del esquema global.
+    * `EntityNotFoundException`: Estandariza las respuestas HTTP 404 (Not Found) cuando un cliente solicita identificadores que no existen en su contexto, evitando que la aplicación rompa el flujo o lance excepciones genéricas de base de datos o punteros nulos (`NullPointerException`).
 
-| Método | Endpoint                  | Descripción              |
-|--------|---------------------------|--------------------------|
-| POST   | `/api/institutions`       | Crear institución        |
-| GET    | `/api/institutions/{id}`  | Obtener institución      |
-
-**Crear institución:**
-```json
-POST /api/institutions
-{
-  "name": "Universidad de Ingeniería y Tecnología",
-  "code": "utec"
-}
-```
-
----
-
-### Salud (`/api/health`) — Pública
-
-| Método | Endpoint       | Descripción      |
-|--------|----------------|------------------|
-| GET    | `/api/health`  | Estado de la API |
-
----
-
-### Códigos de Error Estandarizados
-
-Todos los errores siguen este formato:
+Todos los errores interceptados por el manejador global se transforman y devuelven bajo este formato estandarizado para facilitar el consumo uniforme por parte del frontend:
 
 ```json
 {
@@ -240,133 +183,104 @@ Todos los errores siguen este formato:
   "message": "Entity not found with id: 99"
 }
 ```
+## 6. Medidas de Seguridad Implementadas
 
-| Código HTTP | `error`                            | Causa                             |
-|-------------|------------------------------------|-----------------------------------|
-| 400         | `validation_error`                 | Campos inválidos (con `errors[]`) |
-| 400         | `bad_request`                      | Argumento inválido                |
-| 401         | `invalid_credentials`              | Email o contraseña incorrectos    |
-| 403         | `tenant_violation`                 | Acceso a datos de otro tenant     |
-| 404         | `not_found`                        | Recurso no encontrado             |
-| 409         | `email_already_exists`             | Email ya registrado               |
-| 409         | `institution_code_already_exists`  | Código de institución duplicado   |
+**Seguridad de Datos:**
+* **Autenticación y Autorización:** Se utiliza Spring Security con tokens JWT (HMAC-SHA256). El `institutionId` viaja encriptado en los claims del token.
+* **Cifrado:** Las contraseñas se almacenan mediante hashing con algoritmo BCrypt.
+* **Gestión de Permisos:** Se aplican decoradores `@PreAuthorize` granulares en los controladores basados en una matriz estricta de roles (`STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`).
 
----
-
-## Multitenancy
-
-El aislamiento entre tenants se implementa en múltiples capas:
-
-1. **JWT:** El token lleva el claim `institutionId` del usuario autenticado.
-2. **TenantContext:** Al iniciar cada request, `JwtAuthenticationFilter` extrae el `institutionId` del JWT y lo almacena en un `ThreadLocal`. Se limpia al finalizar el request.
-3. **Services:** Todos los métodos de `CourseService` llaman a `TenantContext.requireInstitutionId()` antes de ejecutar.
-4. **Queries JPA:** Todas las consultas de entidades tenant-aware incluyen `institutionId` como parámetro explícito.
-5. **JPA Listener:** `TenantAwareEntityListener` valida en `@PrePersist` y `@PreUpdate` que el `institution_id` de la entidad coincide con el contexto actual. Si hay mismatch, lanza `TenantViolationException`.
-
-El resultado: si el tenant A intenta acceder a datos del tenant B, recibe `404` (para no filtrar la existencia del recurso) o `403`.
+**Prevención de Vulnerabilidades:**
+* **Aislamiento de Sesiones:** La API es *stateless*, mitigando riesgos de secuestro de sesión.
+* **Rate Limiting y Anti-enumeration:** Los endpoints de recuperación de contraseña responden siempre de manera neutra (202 Accepted) exista o no el correo, y cuentan con un límite de peticiones en memoria para prevenir ataques de fuerza bruta.
 
 ---
 
-## Seguridad y Autenticación
+## 7. Eventos y Asincronía
 
-- **Algoritmo JWT:** HS256 con secreto configurable (mínimo 32 caracteres).
-- **Expiración del token:** 1 hora por defecto (configurable con `JWT_EXPIRATION_MS`).
-- **Contraseñas:** Hasheadas con BCrypt.
-- **API Stateless:** Sin sesiones, CSRF deshabilitado.
-- **Contexto de seguridad:** `AuthenticatedUserPrincipal` almacenado en el `SecurityContext`; no se realizan consultas adicionales a la BD por request.
+Para mantener tiempos de respuesta óptimos, la plataforma desacopla los *side-effects* utilizando `ApplicationEvent`.
+
+**Implementación:**
+* **Procesamiento de Archivos e IA:** La subida de un PDF responde inmediatamente con un estado `PENDING`. La extracción de texto y las llamadas de red al modelo de IA se ejecutan en un ThreadPool dedicado (`pdfProcessorExecutor`).
+* **Notificaciones por Email:** Los correos transaccionales (bienvenida, confirmación de IA) se despachan utilizando listeners `@Async` y `@TransactionalEventListener(AFTER_COMMIT)` para asegurar que el sistema SMTP no ralentice el request original del usuario ni envíe correos si una transacción de base de datos falla.
+* **Flujo Asíncrono de Procesamiento de PDF:**
+
+```mermaid
+sequenceDiagram
+
+    participant Client
+    participant API
+    participant AsyncExecutor
+    participant ClaudeAPI
+
+    Client->>API: POST /documents/upload
+    API->>API: Validar PDF y calcular SHA-256
+    API->>API: Guardar Document en estado PENDING
+    API->>AsyncExecutor: processPdfAsync(documentId, institutionId)
+    API-->>Client: 202 Accepted
+
+    AsyncExecutor->>AsyncExecutor: Extraer texto con PDFBox
+    AsyncExecutor->>API: Actualizar Document a READY
+
+    Client->>API: POST /documents/{id}/generate-flashcards
+    API->>API: Crear AiGenerationJob en estado PENDING
+    API->>AsyncExecutor: generateFlashcardsAsync(jobId, institutionId)
+    API-->>Client: 202 Accepted
+
+    AsyncExecutor->>ClaudeAPI: Generar flashcards por chunks
+    ClaudeAPI-->>AsyncExecutor: Flashcards generadas
+    AsyncExecutor->>API: Guardar Deck + Flashcards + costo
+    AsyncExecutor->>API: Marcar Job como COMPLETED
+```
+> [Ver la matriz de eventos publicados y listeners](docs/events.md)
+
 
 ---
 
-## Configuración
+## 8. GitHub & Management
 
-Copiar `.env.example` a `.env` y completar los valores:
+Para la gestión del proyecto, las tareas se dividieron en *issues* asignados individualmente a los miembros del equipo. Se establecieron *deadlines* semanales y cada ticket fue etiquetado por prioridad y capa técnica (infraestructura, seguridad, endpoints). Para asegurar la calidad del código, se implementó una política de *Pull Requests* (PRs) antes de integrarse a la rama principal.
+Se implementó un flujo de Integración Continua (CI) con GitHub Actions. El *workflow* levanta un contenedor de PostgreSQL, compila el proyecto y ejecuta toda la suite de pruebas unitarias y de integración automáticamente en cada Push y Pull Request hacia las ramas principales. Además, se genera un reporte de cobertura automatizado utilizando el plugin JaCoCo.
 
-| Variable             | Default                                           | Descripción                              |
-|----------------------|---------------------------------------------------|------------------------------------------|
-| `SERVER_PORT`        | `8080`                                            | Puerto del servidor                      |
-| `DB_URL`             | `jdbc:postgresql://localhost:5432/streakstudy_db` | URL de base de datos                     |
-| `DB_USER`            | `postgres`                                        | Usuario de BD                            |
-| `DB_PASSWORD`        | `postgres`                                        | Contraseña de BD                         |
-| `DB_POOL_MAX`        | `10`                                              | Máximo de conexiones (HikariCP)          |
-| `DB_POOL_MIN`        | `2`                                               | Mínimo de conexiones idle                |
-| `JPA_DDL`            | `update`                                          | DDL auto: `update`, `validate`, `none`   |
-| `JPA_SHOW_SQL`       | `true`                                            | Loguear SQL en consola                   |
-| `JWT_SECRET`         | *(inseguro por defecto)*                          | **Cambiar en producción** (min 32 chars) |
-| `JWT_EXPIRATION_MS`  | `3600000`                                         | Expiración JWT en milisegundos (1h)      |
+> [Ver el flujo de trabajo detallado del workflow y variables de CI](docs/ci.md)
 
 ---
 
-## Ejecución con Docker
+## 9. Instalación y Despliegue
+
+La plataforma está dockerizada para facilitar el despliegue.
+
+**Quick Start con Docker:**
 
 ```bash
-# Copiar variables de entorno
 cp .env.example .env
-
-# Levantar PostgreSQL + API
+# Añadir credenciales (ej. ANTHROPIC_API_KEY) al archivo .env
 docker compose up -d --build
-
-# Ver logs
-docker compose logs -f api
-
-# Bajar el stack
-docker compose down
 ```
+La API quedará expuesta en `http://localhost:8080`.
 
-La API queda disponible en `http://localhost:8080`.
-
-**Smoke test básico:**
-```bash
-bash scripts/smoke-test.sh
-```
-
-**Smoke test multitenancy:**
-```bash
-bash scripts/multitenancy-smoke-test.sh
-```
+**Links del Proyecto:**
+* **URL de Producción:** [URL de Render/Railway]
+* **Documentación Swagger:** http://localhost:8080/swagger-ui.html
+* **Colección Postman:** [Link a JSON en el repo]
 
 ---
 
-## Ejecución Local
+## 10. Conclusión
 
-Requiere Java 21 y PostgreSQL corriendo localmente.
+**Logros del Proyecto:** Se construyó un backend robusto capaz de gestionar múltiples instituciones educativas de forma hermética. Se logró integrar una mecánica funcional de gamificación y se automatizó con éxito la transformación de material bruto (PDFs) en recursos de estudio interactivos mediante Inteligencia Artificial.
 
-```bash
-# Compilar
-./mvnw clean package -DskipTests
+**Aprendizajes Clave:** 
+* La aplicación de Arquitectura Hexagonal facilita enormemente la sustitución de adaptadores tecnológicos (por ejemplo, cambiar la herramienta de IA sin alterar el *core*).
+* El manejo de asincronía y el control del `ThreadLocal` para propagar el contexto de seguridad (y el Tenant) entre hilos concurrentes representa un desafío importante pero vital para el rendimiento.
+* El diseño guiado por eventos (Event-Driven) resulta clave para construir flujos limpios y escalables (como el envío de emails).
 
-# Ejecutar
-DB_URL=jdbc:postgresql://localhost:5432/streakstudy_db \
-DB_USER=postgres \
-DB_PASSWORD=postgres \
-JWT_SECRET=mi-secreto-de-al-menos-32-caracteres-aqui \
-./mvnw spring-boot:run
-```
+**Trabajo Futuro:** 
+* Expandir las mecánicas de recompensas con un sistema de ligas o tablas de clasificación (Leaderboard) globales (entre varias instituciones).
+* Implementar analíticas descriptivas para que los profesores puedan medir el progreso de sus grupos.
 
 ---
 
-## Tests
+## 11. Apéndices
 
-```bash
-# Ejecutar todos los tests
-./mvnw test
-```
-
-### Cobertura de Tests
-
-| Test                          | Tipo        | Qué verifica                                   |
-|-------------------------------|-------------|------------------------------------------------|
-| `AuthServiceTest`             | Unitario    | Registro, login, manejo de errores             |
-| `CourseServiceTest`           | Unitario    | CRUD de cursos con tenant mock                 |
-| `InstitutionServiceTest`      | Unitario    | Creación de instituciones, código duplicado    |
-| `MultiTenancyIsolationTest`   | Integración | Aislamiento real entre tenants (H2)            |
-| `JwtServiceTest`              | Unitario    | Emisión y parsing de tokens JWT                |
-| `SecurityConfigTest`          | Integración | Endpoints públicos vs protegidos               |
-| `TenantContextTest`           | Unitario    | ThreadLocal lifecycle, cross-tenant mode       |
-| `HealthControllerTest`        | Integración | Health endpoint                                |
-| `StreakStudyApplicationTests` | Integración | Carga del contexto Spring completo             |
-
----
-
-## Equipo
-
-Proyecto académico desarrollado para el curso **Desarrollo Basado en Plataformas (DBP)** — UTEC, 2026.
+**Licencia:** Código liberado para uso académico bajo los términos del curso.
