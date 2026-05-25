@@ -61,6 +61,16 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.UNAUTHORIZED, "refresh_token_revoked", ex.getMessage(), req);
     }
 
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<Map<String, Object>> invalidPasswordResetToken(InvalidPasswordResetTokenException ex, HttpServletRequest req) {
+        return body(HttpStatus.BAD_REQUEST, "invalid_password_reset_token", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PasswordResetTokenExpiredException.class)
+    public ResponseEntity<Map<String, Object>> passwordResetExpired(PasswordResetTokenExpiredException ex, HttpServletRequest req) {
+        return body(HttpStatus.GONE, "password_reset_token_expired", ex.getMessage(), req);
+    }
+
     @ExceptionHandler(TenantViolationException.class)
     public ResponseEntity<Map<String, Object>> tenantViolation(TenantViolationException ex, HttpServletRequest req) {
         // Devolvemos 403 para que sea visible que es un problema de aislamiento

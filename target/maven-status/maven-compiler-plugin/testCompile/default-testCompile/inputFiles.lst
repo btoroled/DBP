@@ -8,6 +8,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/DocumentServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/InstitutionServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/LeaderboardServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/PasswordResetServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/RewardItemServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StoreServiceEventTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StoreServiceTest.java
@@ -16,6 +17,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailIntegrationTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailTemplateRendererTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/JavaMailEmailSenderAdapterTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/event/PasswordResetEmailListenerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/event/WelcomeEmailListenerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/CourseRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/InstitutionRepositoryAdapterTest.java
@@ -24,6 +26,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/RewardItemRepositoryAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/UserRepositoryAdapterPostgresContainerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/persistence/UserRepositoryAdapterTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/ratelimit/PasswordResetRateLimiterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/JwtServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/JwtUserDetailsServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/SecurityConfigCorsTest.java

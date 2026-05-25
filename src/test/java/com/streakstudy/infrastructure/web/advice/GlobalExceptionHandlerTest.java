@@ -14,6 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.streakstudy.application.service.AuthService;
+import com.streakstudy.application.service.PasswordResetService;
+import com.streakstudy.infrastructure.ratelimit.PasswordResetRateLimiter;
 import com.streakstudy.infrastructure.security.JwtAuthenticationFilter;
 import com.streakstudy.infrastructure.web.AuthController;
 
@@ -29,6 +31,8 @@ class GlobalExceptionHandlerTest {
     @Autowired MockMvc mockMvc;
 
     @MockitoBean AuthService authService;
+    @MockitoBean PasswordResetService passwordResetService;
+    @MockitoBean PasswordResetRateLimiter passwordResetRateLimiter;
     @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test

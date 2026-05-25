@@ -188,6 +188,23 @@ public final class User implements TenantAware {
         );
     }
 
+    public User withPasswordHash(String newPasswordHash) {
+        return new User(
+                this.id,
+                this.institutionId,
+                this.email,
+                Objects.requireNonNull(newPasswordHash, "passwordHash"),
+                this.fullName,
+                this.role,
+                this.createdAt,
+                this.xp,
+                this.currentStreak,
+                this.lastActiveDate,
+                this.streakFreezes,
+                this.badges
+        );
+    }
+
     public Integer streak() { return currentStreak; }
     public Integer points() { return xp; }
 

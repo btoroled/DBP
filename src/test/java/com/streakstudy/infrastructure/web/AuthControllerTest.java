@@ -1,5 +1,8 @@
 package com.streakstudy.infrastructure.web;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -7,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,11 +23,17 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.streakstudy.application.dto.AuthResponse;
+import com.streakstudy.application.dto.ForgotPasswordRequest;
 import com.streakstudy.application.dto.LoginRequest;
 import com.streakstudy.application.dto.RefreshTokenRequest;
 import com.streakstudy.application.dto.RegisterRequest;
+import com.streakstudy.application.dto.ResetPasswordRequest;
 import com.streakstudy.application.service.AuthService;
+import com.streakstudy.application.service.PasswordResetService;
+import com.streakstudy.domain.exception.InvalidPasswordResetTokenException;
+import com.streakstudy.domain.exception.PasswordResetTokenExpiredException;
 import com.streakstudy.domain.model.UserRole;
+import com.streakstudy.infrastructure.ratelimit.PasswordResetRateLimiter;
 import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
 import com.streakstudy.infrastructure.security.JwtAuthenticationFilter;
 import com.streakstudy.infrastructure.web.advice.GlobalExceptionHandler;
@@ -37,7 +47,14 @@ class AuthControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockitoBean AuthService authService;
+    @MockitoBean PasswordResetService passwordResetService;
+    @MockitoBean PasswordResetRateLimiter passwordResetRateLimiter;
     @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @BeforeEach
+    void allowRateLimitByDefault() {
+        when(passwordResetRateLimiter.tryAcquire(anyString())).thenReturn(true);
+    }
 
     @Test
     void shouldReturn201AndExpectedBodyWhenRegistering() throws Exception {
@@ -119,5 +136,107 @@ class AuthControllerTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("validation_error"))
             .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    // ── Password reset ─────────────────────────────────────────────────
+
+    @Test
+    void shouldReturn202WhenForgotPasswordWithExistingEmail() throws Exception {
+        ForgotPasswordRequest req = new ForgotPasswordRequest("alice@utec.edu");
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isAccepted());
+
+        verify(passwordResetService).requestReset("alice@utec.edu");
+    }
+
+    @Test
+    void shouldReturn202WhenForgotPasswordWithUnknownEmail() throws Exception {
+        // AC2: misma respuesta para email inexistente (anti-enumeration).
+        // El service decide internamente que no publicar evento; el controller
+        // siempre responde 202.
+        ForgotPasswordRequest req = new ForgotPasswordRequest("ghost@nowhere.com");
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isAccepted());
+
+        verify(passwordResetService).requestReset("ghost@nowhere.com");
+    }
+
+    @Test
+    void shouldReturn429WhenRateLimitExceededOnForgotPassword() throws Exception {
+        when(passwordResetRateLimiter.tryAcquire("alice@utec.edu")).thenReturn(false);
+        ForgotPasswordRequest req = new ForgotPasswordRequest("alice@utec.edu");
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isTooManyRequests());
+
+        verify(passwordResetService, never()).requestReset(anyString());
+    }
+
+    @Test
+    void shouldReturn400WhenForgotPasswordBodyIsInvalid() throws Exception {
+        ForgotPasswordRequest req = new ForgotPasswordRequest("no-es-email");
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("validation_error"));
+    }
+
+    @Test
+    void shouldReturn204WhenResetPasswordWithValidToken() throws Exception {
+        ResetPasswordRequest req = new ResetPasswordRequest("plain-token", "NewPassword1");
+
+        mockMvc.perform(post("/api/v1/auth/password/reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isNoContent());
+
+        verify(passwordResetService).confirmReset("plain-token", "NewPassword1");
+    }
+
+    @Test
+    void shouldReturn400WhenResetPasswordTokenIsInvalid() throws Exception {
+        doThrow(new InvalidPasswordResetTokenException())
+            .when(passwordResetService).confirmReset(anyString(), anyString());
+        ResetPasswordRequest req = new ResetPasswordRequest("invalid-token", "NewPassword1");
+
+        mockMvc.perform(post("/api/v1/auth/password/reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_password_reset_token"));
+    }
+
+    @Test
+    void shouldReturn410WhenResetPasswordTokenIsExpired() throws Exception {
+        doThrow(new PasswordResetTokenExpiredException())
+            .when(passwordResetService).confirmReset(anyString(), anyString());
+        ResetPasswordRequest req = new ResetPasswordRequest("expired-token", "NewPassword1");
+
+        mockMvc.perform(post("/api/v1/auth/password/reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isGone())
+            .andExpect(jsonPath("$.error").value("password_reset_token_expired"));
+    }
+
+    @Test
+    void shouldReturn400WhenResetPasswordBodyIsInvalid() throws Exception {
+        ResetPasswordRequest req = new ResetPasswordRequest("", "short");
+
+        mockMvc.perform(post("/api/v1/auth/password/reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("validation_error"));
     }
 }
