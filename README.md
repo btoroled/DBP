@@ -549,4 +549,14 @@ La API quedará expuesta en `http://localhost:8080`.
 
 ## 11. Apéndices
 
+### Referencias
+
+- Documentación oficial de Spring Boot
+- Documentación oficial de Spring Security
+- Documentación oficial de PostgreSQL
+- RFC 7519 JSON Web Token (JWT)
+- OpenAPI Specification y Swagger UI
+- Documentación de Testcontainers
+- Documentación de Anthropic API
+
 **Licencia:** Código liberado para uso académico bajo los términos del curso.
