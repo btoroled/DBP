@@ -877,6 +877,64 @@ ANTHROPIC_API_KEY=sk-ant-... \
 ./mvnw spring-boot:run
 ```
 
+### Probar rÃ¡pido en Swagger
+
+Con la app levantada, abre:
+
+- `http://localhost:8080/swagger-ui.html`
+- `http://localhost:8080/v3/api-docs`
+
+Orden recomendado para validar el flujo completo:
+
+1. `POST /api/v1/institutions`
+
+```json
+{
+  "name": "UTEC Demo",
+  "code": "utec-demo"
+}
+```
+
+Guarda el `id` de la instituciÃ³n creada.
+
+2. `POST /api/v1/auth/register`
+
+```json
+{
+  "institutionId": 1,
+  "email": "alumno@demo.com",
+  "password": "12345678",
+  "fullName": "Juan Perez"
+}
+```
+
+Reemplaza `institutionId` por el `id` real del paso 1.
+
+3. `POST /api/v1/auth/login`
+
+```json
+{
+  "email": "alumno@demo.com",
+  "password": "12345678"
+}
+```
+
+Copia el `accessToken` de la respuesta.
+
+4. Pulsa `Authorize` y pega:
+
+```text
+Bearer <accessToken>
+```
+
+5. Prueba endpoints protegidos como:
+
+- `GET /api/v1/users/me/progress`
+- `GET /api/v1/rewards`
+- `POST /api/v1/auth/logout`
+
+Si un endpoint protegido devuelve `403`, normalmente falta autorizar con el JWT o el rol del usuario no tiene permiso para esa operaciÃ³n.
+
 ---
 
 ## Tests
