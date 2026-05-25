@@ -1,5 +1,7 @@
 package com.streakstudy.infrastructure.web;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +23,7 @@ import com.streakstudy.infrastructure.security.AuthenticatedUserPrincipal;
 
 import jakarta.validation.Valid;
 
+@Tag(name = "Auth")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -37,22 +40,26 @@ public class AuthController {
         this.passwordResetRateLimiter = passwordResetRateLimiter;
     }
 
+    @Operation(summary = "Registrar usuario")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req) {
         AuthResponse resp = authService.register(req);
         return ResponseEntity.status(HttpStatus.CREATED).body(resp);
     }
 
+    @Operation(summary = "Iniciar sesión")
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest req) {
         return authService.login(req);
     }
 
+    @Operation(summary = "Renovar access token")
     @PostMapping("/refresh")
     public AuthResponse refresh(@Valid @RequestBody RefreshTokenRequest req) {
         return authService.refresh(req);
     }
 
+    @Operation(summary = "Cerrar sesión")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@AuthenticationPrincipal AuthenticatedUserPrincipal principal,
                                        @Valid @RequestBody RefreshTokenRequest req) {
@@ -64,6 +71,7 @@ public class AuthController {
      * Solicita un email para restablecer la contrasena. Responde 202 SIEMPRE
      * (existe o no el email) para evitar user enumeration.
      */
+    @Operation(summary = "Solicitar recuperación de contraseña")
     @PostMapping("/password/forgot")
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         if (!passwordResetRateLimiter.tryAcquire(req.email())) {
@@ -73,6 +81,7 @@ public class AuthController {
         return ResponseEntity.accepted().build();
     }
 
+    @Operation(summary = "Restablecer contraseña")
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         passwordResetService.confirmReset(req.token(), req.newPassword());
