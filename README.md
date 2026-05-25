@@ -526,9 +526,9 @@ docker compose up -d --build
 La API quedará expuesta en `http://localhost:8080`.
 
 **Links del Proyecto:**
-* **URL de Producción:** [URL de Render/Railway]
+* **URL de Producción:** http://34.207.102.17:8080
 * **Documentación Swagger:** http://localhost:8080/swagger-ui.html
-* **Colección Postman:** [Link a JSON en el repo]
+* **Colección Postman:** [Descargar postman_collection.json](./postman_collection.json)
 
 ---
 
