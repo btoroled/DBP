@@ -43,6 +43,7 @@ class AuthServiceTest {
     @Mock InstitutionRepository institutions;
     @Mock PasswordHasher hasher;
     @Mock TokenIssuer tokens;
+    @Mock RefreshTokenService refreshTokens;
     @Mock ApplicationEventPublisher events;
 
     @InjectMocks AuthService service;

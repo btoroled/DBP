@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,6 +41,7 @@ class AuthServiceEventTest {
     @Mock InstitutionRepository institutions;
     @Mock PasswordHasher hasher;
     @Mock TokenIssuer tokens;
+    @Mock RefreshTokenService refreshTokens;
     @Mock ApplicationEventPublisher events;
     @InjectMocks AuthService service;
 
@@ -57,6 +59,8 @@ class AuthServiceEventTest {
         });
         when(tokens.issue(any(User.class))).thenReturn("jwt");
         when(tokens.expirationSeconds()).thenReturn(3600L);
+        when(refreshTokens.create(any(User.class))).thenReturn(
+            new RefreshTokenService.RefreshTokenGrant("refresh", Instant.now().plus(30, ChronoUnit.DAYS)));
 
         service.register(new RegisterRequest(1L, "Alice@utec.edu", "Password123", "Alice Perez"));
 

@@ -37,17 +37,20 @@ public class AuthService {
     private final InstitutionRepository institutions;
     private final PasswordHasher passwordHasher;
     private final TokenIssuer tokenIssuer;
+    private final RefreshTokenService refreshTokenService;
     private final ApplicationEventPublisher eventPublisher;
 
     public AuthService(UserRepository users,
                        InstitutionRepository institutions,
                        PasswordHasher passwordHasher,
                        TokenIssuer tokenIssuer,
+                       RefreshTokenService refreshTokenService,
                        ApplicationEventPublisher eventPublisher) {
         this.users = users;
         this.institutions = institutions;
         this.passwordHasher = passwordHasher;
         this.tokenIssuer = tokenIssuer;
+        this.refreshTokenService = refreshTokenService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -74,7 +77,7 @@ public class AuthService {
         eventPublisher.publishEvent(new UserRegisteredEvent(
                 saved.id(), saved.institutionId(), saved.email(), saved.fullName()));
 
-        return AuthResponse.of(tokenIssuer.issue(saved), tokenIssuer.expirationSeconds(), saved);
+        return issueTokens(saved);
     }
 
     @Transactional(readOnly = true)

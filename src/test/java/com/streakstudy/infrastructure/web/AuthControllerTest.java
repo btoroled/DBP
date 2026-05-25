@@ -3,7 +3,6 @@ package com.streakstudy.infrastructure.web;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -94,12 +94,17 @@ class AuthControllerTest {
             null,
             principal.getAuthorities()
         );
-
-        mockMvc.perform(post("/api/v1/auth/logout")
-                .with(authentication(auth))
-                .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isNoContent());
+        // Con addFilters=false el post-processor authentication(...) no llega al
+        // ArgumentResolver de @AuthenticationPrincipal. Poblamos el holder a mano.
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        try {
+            mockMvc.perform(post("/api/v1/auth/logout")
+                    .contentType(APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
 
         verify(authService).logout(10L, request);
     }
