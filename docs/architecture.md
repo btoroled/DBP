@@ -1,0 +1,36 @@
+> Parte de la documentación de [StreakStudy API](../README.md).
+
+## Arquitectura
+
+El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   INFRASTRUCTURE                    │
+│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
+│  │   Web    │  │ Security │  │    Persistence      │ │
+│  │(Controllers│ │(JWT,BCrypt│ │ (JPA, Adapters,    │ │
+│  │  DTOs)   │  │ Config)  │  │  Mappers)          │ │
+│  └────┬─────┘  └─────┬────┘  └─────────┬──────────┘ │
+└───────┼──────────────┼────────────────┼─────────────┘
+        │              │                │
+┌───────▼──────────────▼────────────────▼─────────────┐
+│                   APPLICATION                       │
+│         Services  │  DTOs  │  Ports (Interfaces)   │
+└───────────────────┼──────────────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────────────┐
+│                    DOMAIN                           │
+│    Entities  │  Repositories  │  Exceptions         │
+│   (sin frameworks, Java puro)                       │
+└─────────────────────────────────────────────────────┘
+```
+
+**Capas:**
+- **Domain:** Entidades de negocio puras (sin anotaciones de frameworks).
+- **Application:** Casos de uso (Services) y puertos (interfaces).
+- **Infrastructure:** Implementaciones técnicas: JPA, JWT, BCrypt, controladores REST.
+
+**Flujo de Control:**
+Un request entra por la infraestructura web (Controller), pasa por la aplicación (Service) a través de un puerto de entrada, interactúa con el dominio, y persiste mediante un puerto de salida (Adapter).
+---
