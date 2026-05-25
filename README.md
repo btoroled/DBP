@@ -312,6 +312,37 @@ Authorization: Bearer <accessToken>
 }
 ```
 
+**Recuperación de contraseña (Issue #10):**
+
+| Método | Endpoint                          | Descripción                                 |
+|--------|-----------------------------------|---------------------------------------------|
+| POST   | `/api/v1/auth/password/forgot`    | Solicita email con link de reset → 202     |
+| POST   | `/api/v1/auth/password/reset`     | Confirma reset con token → 204             |
+
+```json
+POST /api/v1/auth/password/forgot
+{
+  "email": "alumno@utec.edu.pe"
+}
+```
+**Respuesta:** `202 Accepted` siempre — existe o no el email (anti-enumeration). Si el correo está habilitado (`MAIL_ENABLED=true`), se envía el link a `${FRONTEND_URL}/reset-password?token=...`.
+
+```json
+POST /api/v1/auth/password/reset
+{
+  "token": "<token-del-email>",
+  "newPassword": "MiNuevaPassword123"
+}
+```
+**Respuesta:** `204 No Content` cuando el token es válido.
+**Errores:** `400 invalid_password_reset_token` si no existe o ya fue usado · `410 password_reset_token_expired` si pasó el TTL (30 min por defecto).
+
+Características de seguridad:
+- Token de **un solo uso**: tras un reset exitoso, el token se marca como usado.
+- **Rotación**: solicitar un nuevo `/forgot` invalida todos los tokens previos activos del mismo email.
+- Solo se almacena el **SHA-256** del token en `password_reset_tokens.token_hash`; el plaintext nunca toca la BD ni los logs.
+- **Rate limit** in-memory: 5 requests/email/hora a `/forgot` (configurable). Excedido → `429 Too Many Requests`.
+
 ---
 
 ### Documentos PDF y Flashcards IA (`/api/documents`) — Requiere JWT
@@ -761,6 +792,10 @@ Copiar `.env.example` a `.env` y completar los valores:
 | `MAIL_USER`          | *(vacío)*                                         | Usuario SMTP                             |
 | `MAIL_PASSWORD`      | *(vacío)*                                         | Contraseña / app password SMTP           |
 | `MAIL_FROM`          | `no-reply@streakstudy.com`                        | Dirección remitente                      |
+| `PASSWORD_RESET_TTL_MIN`         | `30`     | TTL del token de reset (minutos)         |
+| `FRONTEND_URL`                   | `http://localhost:5173` | Base URL del frontend para el link del email |
+| `PASSWORD_RESET_RATE_LIMIT_MAX`  | `5`      | Max requests a `/forgot` por email en la ventana |
+| `PASSWORD_RESET_RATE_LIMIT_WINDOW_MIN` | `60` | Ventana del rate limit (minutos)         |
 
 ---
 

@@ -12,6 +12,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/FinishReviewRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/FlashcardDetailResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/FlashcardResponse.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/ForgotPasswordRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/GenerateFlashcardsRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/InstitutionRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/InstitutionResponse.java
@@ -19,6 +20,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/LoginRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/RefreshTokenRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/RegisterRequest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/ResetPasswordRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/RewardItemResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/UpdateDeckRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/UpdateFlashcardRequest.java
@@ -26,6 +28,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/BadgeEarnedEvent.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/FlashcardsGeneratedEvent.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/PasswordResetRequestedEvent.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/event/UserRegisteredEvent.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/port/AiFlashcardGeneratorPort.java
@@ -44,6 +47,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/FlashcardService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/InstitutionService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/LeaderboardService.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/PasswordResetService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/RefreshTokenService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/RewardItemService.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/service/StoreService.java
@@ -57,8 +61,10 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/EntityNotFoundException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/InsufficientXpException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/InvalidCredentialsException.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/InvalidPasswordResetTokenException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/InvalidRefreshTokenException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/MaxStreakFreezesReachedException.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/PasswordResetTokenExpiredException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/RefreshTokenExpiredException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/RefreshTokenRevokedException.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/exception/TenantViolationException.java
@@ -97,6 +103,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/JavaMailEmailSenderAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/BadgeEarnedEmailListener.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/FlashcardsReadyEmailListener.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/PasswordResetEmailListener.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/event/listener/WelcomeEmailListener.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/job/StreakResetJob.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/package-info.java
@@ -114,6 +121,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/DocumentJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/FlashcardJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/InstitutionJpa.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/PasswordResetTokenJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/RefreshTokenJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/RewardItemJpa.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/entity/TenantAwareEntityListener.java
@@ -134,9 +142,11 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/DocumentJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/FlashcardJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/InstitutionJpaRepository.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/PasswordResetTokenJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/RefreshTokenJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/RewardItemJpaRepository.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/persistence/repository/UserJpaRepository.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ratelimit/PasswordResetRateLimiter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/security/AuthenticatedUserPrincipal.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/security/BCryptPasswordHasherAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/security/JwtAuthenticationFilter.java
