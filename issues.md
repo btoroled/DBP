@@ -15,7 +15,7 @@
 | # | Issue | Rúbrica | Pts en juego | Esfuerzo | Estado |
 |---|---|---|---|---|---|
 | 1 | ~~Sistema de eventos + email~~ | 8.1 + 8.3 | ~1.5 | 1-2 días | ✅ mergeado [#43](https://github.com/btoroled/DBP/pull/43) |
-| 2 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | ✅ implementado |
+| 2 | Postman Collection v1 | Entregable S10 | obligatorio | 4h | _por crear_ |
 | 3 | ~~GitHub Actions CI~~ | §10 + bonus | ~0.3 | 3h | ✅ mergeado [#40](https://github.com/btoroled/DBP/pull/40) |
 | 4 | ~~API hardening (/v1, CORS, path, HMNR)~~ | 5.2, 6.1, 7.1 | ~0.6 | 4h | ✅ mergeado [#43](https://github.com/btoroled/DBP/pull/43) |
 | 5 | Swagger/OpenAPI | Bonus | ~0.3 | 2h | _por crear_ |

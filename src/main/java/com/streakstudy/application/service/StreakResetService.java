@@ -2,6 +2,8 @@ package com.streakstudy.application.service;
 
 import com.streakstudy.domain.model.User;
 import com.streakstudy.domain.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
@@ -9,6 +11,8 @@ import java.util.List;
 
 @Service
 public class StreakResetService {
+
+    private static final Logger log = LoggerFactory.getLogger(StreakResetService.class);
 
     private final UserRepository userRepository;
 
@@ -52,9 +56,7 @@ public class StreakResetService {
             }
         }
 
-        System.out.println("Log de Cron Job");
-        System.out.println("Usuarios evaluados: " + inactiveUsers.size());
-        System.out.println("Protectores consumidos: " + freezesUsed);
-        System.out.println("Rachas reiniciadas: " + streaksLost);
+        log.info("Streak reset job summary: evaluated={}, freezesUsed={}, streaksLost={}",
+                inactiveUsers.size(), freezesUsed, streaksLost);
     }
 }
