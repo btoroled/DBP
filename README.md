@@ -1,4 +1,4 @@
-# StreakStudy API
+﻿# StreakStudy API
 
 [![CI](https://github.com/btoroled/DBP/actions/workflows/ci.yml/badge.svg)](https://github.com/btoroled/DBP/actions/workflows/ci.yml)
 
@@ -6,168 +6,265 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 
 ---
 
-## Tabla de Contenidos
+## Índice
 
-- [Descripción General](#descripción-general)
-- [Arquitectura](#arquitectura)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Dominio del Negocio](#dominio-del-negocio)
-- [PDF → Flashcards con IA](#pdf--flashcards-con-ia)
+- [Portada](#portada)
+- [Introducción](#introducción)
+- [Problema y Necesidad](#problema-y-necesidad)
+- [Descripción de la Solución](#descripción-de-la-solución)
+- [Modelo de Entidades](#modelo-de-entidades)
 - [API REST](#api-rest)
 - [Multitenancy](#multitenancy)
-- [Seguridad y Autenticación](#seguridad-y-autenticación)
-- [Eventos y Email](#eventos-y-email)
-- [Configuración](#configuración)
-- [Ejecución con Docker](#ejecución-con-docker)
-- [Ejecución Local](#ejecución-local)
-- [Tests](#tests)
-- [GitHub Actions (CI)](#github-actions-ci)
+- [Medidas de Seguridad Implementadas](#medidas-de-seguridad-implementadas)
+- [Eventos y Asincronía](#eventos-y-asincronía)
+- [Variables de Entorno](#variables-de-entorno)
+- [Instalación y Ejecución](#instalación-y-ejecución)
+- [Testing y Manejo de Errores](#testing-y-manejo-de-errores)
+- [GitHub & Project Management](#github--project-management)
 - [Deployment](#deployment)
+- [Conclusiones](#conclusiones)
 - [Equipo](#equipo)
+- [Referencias](#referencias)
 - [Licencia](#licencia)
 
 ---
 
-## Descripción General
+## Portada
 
-StreakStudy API es el backend de una plataforma educativa gamificada. Cada institución educativa opera como un tenant aislado: sus usuarios y cursos no son visibles desde otros tenants. La autenticación es por JWT y el contexto de tenant se propaga automáticamente en cada request.
+- **Título del Proyecto:** StreakStudy API
+- **Curso:** CS 2031 Desarrollo Basado en Plataforma
+- **Propósito:** plataforma backend para aprendizaje gamificado con IA, multitenancy y automatización de material de estudio
+- **Integrantes:**
 
-Los estudiantes acumulan XP y rachas diarias completando revisiones. Pueden gastar su XP en la tienda para comprar streak freezes y badges. Un job diario reinicia las rachas de los estudiantes inactivos.
+| Integrante | Código |
+|---|---|
+| Alfaro Quispe, Gloria | 202310083 |
+| Toro Leddihn, Benjamin | 202510596 |
+| Leon Pantaleon, Jobeth | 202510035 |
+| Alvarez Beraun, Valentina | 202310488 |
+| Sandoval Toro, Daniel | 202310533 |
 
-Los estudiantes también pueden subir documentos PDF y, una vez procesados, solicitar que la IA genere flashcards automáticamente a partir del contenido.
+## Introducción
 
----
+StreakStudy API es el backend de una plataforma educativa gamificada. Cada institución educativa opera como un tenant aislado: sus usuarios, cursos, progreso y documentos no son visibles desde otras organizaciones. La autenticación es por JWT y el contexto de tenant se propaga automáticamente en cada request.
 
-## Arquitectura
+El proyecto surge en un contexto donde los estudiantes consumen contenido académico en PDF, estudian de manera dispersa y no siempre cuentan con mecanismos de seguimiento o refuerzo diario. Al mismo tiempo, las instituciones requieren una solución segura, escalable y trazable para gestionar usuarios, roles, contenido y progreso dentro de límites estrictos de aislamiento de datos.
 
-El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)**:
+## Problema y Necesidad
 
+El problema principal es la dificultad de sostener hábitos de estudio dentro de una plataforma multiinstitucional sin comprometer seguridad ni operatividad. Un sistema de este tipo debe resolver necesidades de negocio y de ingeniería al mismo tiempo: autenticación segura, separación por tenant, gestión de permisos, incentivos de uso, procesamiento de documentos y generación de material de práctica.
+
+Sin una solución integrada aparecen varios riesgos: fuga de información entre instituciones, preparación manual y costosa de flashcards, experiencia de estudio fragmentada, poca constancia del alumno y un backend difícil de evolucionar. Por eso el proyecto se enfoca en unificar gamificación, multitenancy e IA en una misma API con arquitectura mantenible.
+
+## Descripción de la Solución
+
+### Arquitectura
+
+El proyecto sigue **Arquitectura Hexagonal (Ports & Adapters)** para desacoplar la lógica de negocio de frameworks y servicios externos.
+
+```mermaid
+flowchart TB
+
+    subgraph Infrastructure
+        WEB[Controllers / REST API]
+        SEC[Security JWT]
+        DB[(PostgreSQL)]
+        EXT[Anthropic API]
+    end
+
+    subgraph Application
+        SERVICES[Services / Use Cases]
+        DTO[DTOs]
+        PORTS[Ports]
+    end
+
+    subgraph Domain
+        ENTITIES[Entities]
+        REPOSITORIES[Repository Interfaces]
+        EXCEPTIONS[Domain Exceptions]
+    end
+
+    WEB --> SERVICES
+    SEC --> SERVICES
+    SERVICES --> PORTS
+    SERVICES --> REPOSITORIES
+    PORTS --> EXT
+    REPOSITORIES --> DB
 ```
-┌─────────────────────────────────────────────────────┐
-│                   INFRASTRUCTURE                    │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
-│  │   Web    │  │ Security │  │    Persistence      │ │
-│  │(Controllers│ │(JWT,BCrypt│ │ (JPA, Adapters,    │ │
-│  │  DTOs)   │  │ Config)  │  │  Mappers)          │ │
-│  └────┬─────┘  └─────┬────┘  └─────────┬──────────┘ │
-└───────┼──────────────┼────────────────┼─────────────┘
-        │              │                │
-┌───────▼──────────────▼────────────────▼─────────────┐
-│                   APPLICATION                       │
-│         Services  │  DTOs  │  Ports (Interfaces)   │
-└───────────────────┼──────────────────────────────────┘
-                    │
-┌───────────────────▼──────────────────────────────────┐
-│                    DOMAIN                           │
-│    Entities  │  Repositories  │  Exceptions         │
-│   (sin frameworks, Java puro)                       │
-└─────────────────────────────────────────────────────┘
-```
 
-**Capas:**
-- **Domain:** Entidades de negocio puras (sin anotaciones de frameworks).
-- **Application:** Casos de uso (Services y UseCases) y puertos (interfaces).
-- **Infrastructure:** Implementaciones técnicas: JPA, JWT, BCrypt, controladores REST, jobs.
+**Capas principales:**
+- **Domain:** entidades y reglas puras, sin dependencia de frameworks.
+- **Application:** casos de uso, DTOs y puertos que orquestan la lógica.
+- **Infrastructure:** controladores, seguridad, persistencia, jobs y adaptadores externos.
 
----
+### Decisiones de Diseño
 
-## Stack Tecnológico
+#### Arquitectura Hexagonal
 
-| Componente        | Tecnología                        |
-|-------------------|-----------------------------------|
-| Lenguaje          | Java 21                           |
-| Framework         | Spring Boot 3.4.5                 |
-| Persistencia      | Spring Data JPA + PostgreSQL 16   |
-| Seguridad         | Spring Security + JWT (JJWT 0.12) |
-| Build             | Maven 3.9                         |
-| Contenedores      | Docker + Docker Compose           |
-| Tests unitarios   | JUnit 5 + Mockito                 |
+Se eligió arquitectura hexagonal para desacoplar lógica de negocio de frameworks y tecnologías externas. Esto permite cambiar mecanismos de persistencia, autenticación o proveedores de IA sin afectar el dominio principal.
+
+#### Multitenancy basado en ThreadLocal
+
+El uso de TenantContext mediante ThreadLocal permite propagar automáticamente el institutionId durante el ciclo de vida de cada request, asegurando aislamiento entre tenants.
+
+#### Procesamiento Asíncrono
+
+El procesamiento de PDFs y la generación de flashcards se ejecutan de forma asíncrona para evitar bloquear requests HTTP y mejorar escalabilidad.
+
+#### JWT + Refresh Tokens
+
+Se utilizan access tokens de corta duración y refresh tokens para balancear seguridad, continuidad de sesión y control operativo.
+
+### Tecnologías Utilizadas
+
+| Componente        | Tecnología                         |
+|-------------------|------------------------------------|
+| Lenguaje          | Java 21                            |
+| Framework         | Spring Boot 3.4.5                  |
+| Persistencia      | Spring Data JPA + PostgreSQL 16    |
+| Seguridad         | Spring Security + JWT (JJWT 0.12)  |
+| Build             | Maven 3.9                          |
+| Contenedores      | Docker + Docker Compose            |
+| Tests unitarios   | JUnit 5 + Mockito                  |
 | Tests integración | @DataJpaTest + H2 + Testcontainers |
-| Extracción PDF    | Apache PDFBox 3.0.3               |
-| IA generativa     | Anthropic Claude Haiku (`claude-haiku-4-5-20251001`) |
+| Extracción PDF    | Apache PDFBox 3.0.3                |
+| IA generativa     | Anthropic Claude Haiku (claude-haiku-4-5-20251001) |
 
----
+### Funcionalidades Implementadas
 
-## Estructura del Proyecto
+- **Autenticación y autorización:** registro, login, refresh token, logout y recuperación de contraseña.
+- **Multitenancy por institución:** el backend aísla usuarios, cursos, decks y progreso por institutionId.
+- **Gamificación:** XP, rachas, streak freezes y compra de badges.
+- **Gestión académica:** instituciones, cursos, decks y flashcards.
+- **Procesamiento documental:** carga de PDF, deduplicación por hash y extracción de texto.
+- **Generación de estudio con IA:** creación automática de flashcards a partir de PDFs.
+- **Observabilidad y operación:** health checks, OpenAPI/Swagger y CI automatizada.
+
+### Estructura del Proyecto
 
 ```
 src/main/java/com/streakstudy/
-├── StreakStudyApplication.java
-├── domain/
-│   ├── model/
-│   │   ├── User.java
-│   │   ├── Course.java
-│   │   ├── Institution.java
-│   │   ├── Badge.java
-│   │   ├── RewardItem.java
-│   │   ├── Document.java          # Documento PDF subido
-│   │   ├── DocumentStatus.java    # Enum: PENDING, PROCESSING, READY, FAILED
-│   │   ├── AiGenerationJob.java   # Job de generación de flashcards
-│   │   ├── AiGenerationJobStatus.java  # Enum: PENDING, RUNNING, COMPLETED, FAILED
-│   │   ├── Deck.java              # Mazo de flashcards
-│   │   ├── Flashcard.java         # Flashcard individual
-│   │   ├── UserRole.java
-│   │   └── TenantAware.java
-│   ├── repository/
-│   │   ├── UserRepository.java
-│   │   ├── CourseRepository.java
-│   │   ├── InstitutionRepository.java
-│   │   ├── RewardItemRepository.java
-│   │   ├── DocumentRepository.java
-│   │   ├── AiGenerationJobRepository.java
-│   │   ├── DeckRepository.java
-│   │   └── FlashcardRepository.java
-│   └── exception/
-│       ├── DomainException.java
-│       ├── BadgeAlreadyOwnedException.java
-│       ├── EmailAlreadyExistsException.java
-│       ├── EntityNotFoundException.java
-│       ├── InsufficientXpException.java
-│       ├── InvalidCredentialsException.java
-│       ├── MaxStreakFreezesReachedException.java
-│       └── TenantViolationException.java
-├── application/
-│   ├── dto/                       # Request/Response records
-│   ├── service/
-│   │   ├── AuthService.java
-│   │   ├── CourseService.java
-│   │   ├── DeckService.java             # CRUD de mazos de flashcards
-│   │   ├── DocumentService.java         # Lógica de documentos y dedup
-│   │   ├── DocumentProcessingService.java  # Procesamiento async (PDF + IA)
-│   │   ├── FlashcardService.java        # CRUD de flashcards individuales
-│   │   ├── InstitutionService.java
-│   │   ├── LeaderboardService.java
-│   │   ├── RewardItemService.java
-│   │   ├── StoreService.java
-│   │   ├── StreakResetService.java
-│   │   └── UserProgressService.java
-│   └── port/
-│       ├── DocumentProcessingPort.java  # Interface para procesamiento async
-│       ├── PdfTextExtractorPort.java    # Interface para extracción de texto
-│       ├── AiFlashcardGeneratorPort.java  # Interface para generación IA
-│       ├── FinishReviewUseCase.java
-│       ├── GetUserProgressUseCase.java
-│       ├── PasswordHasher.java
-│       └── TokenIssuer.java
-└── infrastructure/
-    ├── ai/
-    │   ├── PdfBoxTextExtractorAdapter.java      # PDFBox 3.x
-    │   └── AnthropicFlashcardGeneratorAdapter.java  # Anthropic REST API
-    ├── config/
-    │   └── AsyncConfig.java          # ThreadPoolTaskExecutor para PDF/IA
-    ├── job/                          # StreakResetJob (tarea diaria)
-    ├── persistence/                  # JPA entities, repositories, adapters, mappers
-    ├── security/                     # JwtService, JwtAuthenticationFilter, SecurityConfig
-    ├── tenancy/                      # TenantContext, TenantAwareJpaEntity, EntityListener
-    └── web/                          # Controllers, GlobalExceptionHandler
+|-- StreakStudyApplication.java
+|-- domain/
+|   |-- model/
+|   |   |-- User.java
+|   |   |-- Course.java
+|   |   |-- Institution.java
+|   |   |-- Badge.java
+|   |   |-- RewardItem.java
+|   |   |-- Document.java
+|   |   |-- DocumentStatus.java
+|   |   |-- AiGenerationJob.java
+|   |   |-- AiGenerationJobStatus.java
+|   |   |-- Deck.java
+|   |   |-- Flashcard.java
+|   |   |-- UserRole.java
+|   |   `-- TenantAware.java
+|   |-- repository/
+|   |   |-- UserRepository.java
+|   |   |-- CourseRepository.java
+|   |   |-- InstitutionRepository.java
+|   |   |-- RewardItemRepository.java
+|   |   |-- DocumentRepository.java
+|   |   |-- AiGenerationJobRepository.java
+|   |   |-- DeckRepository.java
+|   |   `-- FlashcardRepository.java
+|   `-- exception/
+|       |-- DomainException.java
+|       |-- BadgeAlreadyOwnedException.java
+|       |-- EmailAlreadyExistsException.java
+|       |-- EntityNotFoundException.java
+|       |-- InsufficientXpException.java
+|       |-- InvalidCredentialsException.java
+|       |-- MaxStreakFreezesReachedException.java
+|       `-- TenantViolationException.java
+|-- application/
+|   |-- dto/
+|   |-- service/
+|   |   |-- AuthService.java
+|   |   |-- CourseService.java
+|   |   |-- DeckService.java
+|   |   |-- DocumentService.java
+|   |   |-- DocumentProcessingService.java
+|   |   |-- FlashcardService.java
+|   |   |-- InstitutionService.java
+|   |   |-- LeaderboardService.java
+|   |   |-- RewardItemService.java
+|   |   |-- StoreService.java
+|   |   |-- StreakResetService.java
+|   |   `-- UserProgressService.java
+|   `-- port/
+|       |-- DocumentProcessingPort.java
+|       |-- PdfTextExtractorPort.java
+|       |-- AiFlashcardGeneratorPort.java
+|       |-- FinishReviewUseCase.java
+|       |-- GetUserProgressUseCase.java
+|       |-- PasswordHasher.java
+|       `-- TokenIssuer.java
+`-- infrastructure/
+    |-- ai/
+    |   |-- PdfBoxTextExtractorAdapter.java
+    |   `-- AnthropicFlashcardGeneratorAdapter.java
+    |-- config/
+    |   `-- AsyncConfig.java
+    |-- job/
+    |-- persistence/
+    |-- security/
+    |-- tenancy/
+    `-- web/
 ```
 
 ---
 
-## Dominio del Negocio
+## Modelo de Entidades
 
-### Entidades
+```mermaid
+erDiagram
+
+    INSTITUTION ||--o{ USER : contains
+    INSTITUTION ||--o{ COURSE : owns
+
+    USER ||--o{ DOCUMENT : uploads
+    USER ||--o{ DECK : creates
+    USER }o--o{ BADGE : earns
+    USER ||--o{ REFRESH_TOKEN : owns
+
+    DOCUMENT ||--o{ AI_GENERATION_JOB : triggers
+
+    DECK ||--o{ FLASHCARD : contains
+
+    COURSE ||--o{ DECK : includes
+
+    USER {
+        long id
+        string email
+        string password
+        string role
+        int xp
+        int streak
+    }
+
+    INSTITUTION {
+        long id
+        string name
+        string code
+    }
+
+    DOCUMENT {
+        long id
+        string filename
+        string status
+        string sha256
+    }
+
+    FLASHCARD {
+        long id
+        string question
+        string answer
+    }
+```
+
+### Descripción de Entidades
 
 | Entidad            | Tenant-Aware | Descripción                                              |
 |--------------------|:------------:|----------------------------------------------------------|
@@ -176,7 +273,7 @@ src/main/java/com/streakstudy/
 | `Course`           | Sí           | Curso perteneciente a una institución                    |
 | `Badge`            | No           | Insignia comprable con XP                                |
 | `RewardItem`       | No           | Item del catálogo de la tienda                           |
-| `Document`         | Sí           | PDF subido; pasa por estados PENDING → PROCESSING → READY |
+| `Document`         | Sí           | PDF subido; pasa por estados PENDING -> PROCESSING -> READY |
 | `AiGenerationJob`  | No           | Registro de un trabajo de generación IA con tracking de tokens y costo |
 | `Deck`             | Sí           | Mazo de flashcards                                       |
 | `Flashcard`        | Sí           | Pregunta + respuesta generada por IA                     |
@@ -199,32 +296,38 @@ src/main/java/com/streakstudy/
 
 ---
 
-## PDF → Flashcards con IA
+## Eventos y Asincronía
 
-### Flujo de Procesamiento
+### Flujo Asíncrono de Procesamiento PDF
 
-El pipeline está completamente asíncrono: el hilo HTTP siempre responde de inmediato (202 Accepted) y el trabajo pesado se ejecuta en un `ThreadPoolTaskExecutor` dedicado (`pdfProcessorExecutor`, 2–4 hilos).
+El pipeline está completamente desacoplado del request HTTP: la API valida y registra el documento, responde `202 Accepted`, y luego deriva el procesamiento pesado a un ejecutor asíncrono dedicado.
 
-```
-Cliente                   API (hilo HTTP)              pdfProcessorExecutor
-  │                            │                              │
-  │── POST /upload ──────────► │                              │
-  │                            │ valida tipo + tamaño         │
-  │                            │ calcula SHA-256 (dedup)      │
-  │                            │ guarda Document PENDING      │
-  │                            │ ──── processPdf() ──────────►│
-  │◄── 202 { documentId } ───  │                              │ extrae texto (PDFBox)
-  │                            │                              │ → Document READY
-  │── GET /status ───────────► │                              │
-  │◄── { status: "READY" } ── │                              │
-  │                            │                              │
-  │── POST /generate ────────► │                              │
-  │                            │ crea AiGenerationJob PENDING │
-  │                            │ ──── generateFlashcards() ──►│
-  │◄── 202 { jobId } ─────── │                              │ divide en chunks de 2000 chars
-  │                            │                              │ llama a Claude Haiku por chunk
-  │── GET /jobs/{jobId} ─────► │                              │ guarda Flashcards
-  │◄── { status: "COMPLETED"} │                              │ → Job COMPLETED + tokens + costo
+```mermaid
+sequenceDiagram
+
+    participant Client
+    participant API
+    participant AsyncExecutor
+    participant ClaudeAPI
+
+    Client->>API: POST /documents/upload
+    API->>API: Validar PDF y calcular SHA-256
+    API->>API: Guardar Document en estado PENDING
+    API->>AsyncExecutor: processPdfAsync(documentId, institutionId)
+    API-->>Client: 202 Accepted
+
+    AsyncExecutor->>AsyncExecutor: Extraer texto con PDFBox
+    AsyncExecutor->>API: Actualizar Document a READY
+
+    Client->>API: POST /documents/{id}/generate-flashcards
+    API->>API: Crear AiGenerationJob en estado PENDING
+    API->>AsyncExecutor: generateFlashcardsAsync(jobId, institutionId)
+    API-->>Client: 202 Accepted
+
+    AsyncExecutor->>ClaudeAPI: Generar flashcards por chunks
+    ClaudeAPI-->>AsyncExecutor: Flashcards generadas
+    AsyncExecutor->>API: Guardar Deck + Flashcards + costo
+    AsyncExecutor->>API: Marcar Job como COMPLETED
 ```
 
 ### Deduplicación de Documentos
@@ -245,7 +348,7 @@ Como los threads del pool no heredan el `ThreadLocal` del hilo HTTP, los método
 
 ## API REST
 
-### Autenticación (`/api/auth`) — Pública
+### Autenticación (`/api/auth`) - Pública
 
 | Método | Endpoint              | Descripción                     |
 |--------|-----------------------|---------------------------------|
@@ -318,8 +421,8 @@ Authorization: Bearer <accessToken>
 
 | Método | Endpoint                          | Descripción                                 |
 |--------|-----------------------------------|---------------------------------------------|
-| POST   | `/api/v1/auth/password/forgot`    | Solicita email con link de reset → 202     |
-| POST   | `/api/v1/auth/password/reset`     | Confirma reset con token → 204             |
+| POST   | `/api/v1/auth/password/forgot`    | Solicita email con link de reset -> 202     |
+| POST   | `/api/v1/auth/password/reset`     | Confirma reset con token -> 204             |
 
 ```json
 POST /api/v1/auth/password/forgot
@@ -327,7 +430,7 @@ POST /api/v1/auth/password/forgot
   "email": "alumno@utec.edu.pe"
 }
 ```
-**Respuesta:** `202 Accepted` siempre — existe o no el email (anti-enumeration). Si el correo está habilitado (`MAIL_ENABLED=true`), se envía el link a `${FRONTEND_URL}/reset-password?token=...`.
+**Respuesta:** `202 Accepted` siempre - existe o no el email (anti-enumeration). Si el correo está habilitado (`MAIL_ENABLED=true`), se envía el link a `${FRONTEND_URL}/reset-password?token=...`.
 
 ```json
 POST /api/v1/auth/password/reset
@@ -343,18 +446,18 @@ Características de seguridad:
 - Token de **un solo uso**: tras un reset exitoso, el token se marca como usado.
 - **Rotación**: solicitar un nuevo `/forgot` invalida todos los tokens previos activos del mismo email.
 - Solo se almacena el **SHA-256** del token en `password_reset_tokens.token_hash`; el plaintext nunca toca la BD ni los logs.
-- **Rate limit** in-memory: 5 requests/email/hora a `/forgot` (configurable). Excedido → `429 Too Many Requests`.
+- **Rate limit** in-memory: 5 requests/email/hora a `/forgot` (configurable). Excedido -> `429 Too Many Requests`.
 
 ---
 
-### Documentos PDF y Flashcards IA (`/api/documents`) — Requiere JWT
+### Documentos PDF y Flashcards IA (`/api/documents`) - Requiere JWT
 
 | Método | Endpoint                              | Descripción                                              |
 |--------|---------------------------------------|----------------------------------------------------------|
-| POST   | `/api/documents/upload`               | Subir PDF (multipart/form-data) → 202 Accepted          |
+| POST   | `/api/documents/upload`               | Subir PDF (multipart/form-data) -> 202 Accepted          |
 | GET    | `/api/documents/{id}/status`          | Consultar estado de procesamiento del documento          |
 | GET    | `/api/documents/{id}/markdown`        | Obtener texto extraído del PDF (solo si READY)           |
-| POST   | `/api/documents/{id}/generate-flashcards` | Disparar generación IA → 202 Accepted con jobId      |
+| POST   | `/api/documents/{id}/generate-flashcards` | Disparar generación IA -> 202 Accepted con jobId      |
 | GET    | `/api/documents/jobs/{jobId}`         | Consultar estado del job IA (tokens, costo)              |
 | GET    | `/api/documents/{id}/flashcards`      | Obtener las flashcards generadas para el documento       |
 
@@ -431,7 +534,7 @@ GET /api/documents/jobs/77
 
 ---
 
-### Mazos de Flashcards (`/api/decks`) — Requiere JWT
+### Mazos de Flashcards (`/api/decks`) - Requiere JWT
 
 | Método | Endpoint           | Descripción                                  |
 |--------|--------------------|----------------------------------------------|
@@ -476,7 +579,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Flashcards (`/api/flashcards`) — Requiere JWT
+### Flashcards (`/api/flashcards`) - Requiere JWT
 
 | Método | Endpoint                          | Descripción                              |
 |--------|-----------------------------------|------------------------------------------|
@@ -522,7 +625,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Cursos (`/api/courses`) — Requiere JWT
+### Cursos (`/api/courses`) - Requiere JWT
 
 | Método | Endpoint            | Descripción                               |
 |--------|---------------------|-------------------------------------------|
@@ -544,7 +647,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Instituciones (`/api/institutions`) — Pública
+### Instituciones (`/api/institutions`) - Pública
 
 | Método | Endpoint                  | Descripción              |
 |--------|---------------------------|--------------------------|
@@ -562,7 +665,7 @@ POST /api/institutions
 
 ---
 
-### Progreso del Usuario (`/api/users/me/progress`) — Requiere JWT
+### Progreso del Usuario (`/api/users/me/progress`) - Requiere JWT
 
 | Método | Endpoint                           | Descripción                                      |
 |--------|------------------------------------|--------------------------------------------------|
@@ -593,7 +696,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Tienda (`/api/store`) — Requiere JWT
+### Tienda (`/api/store`) - Requiere JWT
 
 | Método | Endpoint                  | Descripción                              |
 |--------|---------------------------|------------------------------------------|
@@ -612,7 +715,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Catálogo de Recompensas (`/api/rewards`) — Requiere JWT
+### Catálogo de Recompensas (`/api/rewards`) - Requiere JWT
 
 | Método | Endpoint       | Descripción                           |
 |--------|----------------|---------------------------------------|
@@ -620,7 +723,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Leaderboard (`/api/leaderboard`) — Requiere JWT
+### Leaderboard (`/api/leaderboard`) - Requiere JWT
 
 | Método | Endpoint            | Descripción                                                      |
 |--------|---------------------|------------------------------------------------------------------|
@@ -637,7 +740,7 @@ Authorization: Bearer <jwt>
 
 ---
 
-### Salud (`/api/health`) — Pública
+### Salud (`/api/health`) - Pública
 
 | Método | Endpoint       | Descripción      |
 |--------|----------------|------------------|
@@ -688,7 +791,7 @@ El resultado: si el tenant A intenta acceder a datos del tenant B, recibe `404` 
 
 ---
 
-## Seguridad y Autenticación
+## Medidas de Seguridad Implementadas
 
 - **Algoritmo JWT:** HS256 con secreto configurable (mínimo 32 caracteres).
 - **Expiración del token:** 1 hora por defecto (configurable con `JWT_EXPIRATION_MS`).
@@ -722,16 +825,16 @@ Matriz de autorización aplicada con `@PreAuthorize` granular (controller + mét
 | `POST /api/v1/documents/**`, `GET /api/v1/documents/**` | autenticado                                   |
 | `GET  /api/v1/rewards`                         | autenticado                                            |
 
-Acceso sin la autoridad correcta → `403 forbidden` (mapeado por `GlobalExceptionHandler` desde `AccessDeniedException`).
+Acceso sin la autoridad correcta -> `403 forbidden` (mapeado por `GlobalExceptionHandler` desde `AccessDeniedException`).
 
 ---
 
-## Eventos y Email
+### Eventos de Dominio y Email
 
 StreakStudy desacopla los side-effects de la lógica de negocio publicando
 `ApplicationEvent`s desde los servicios y consumiéndolos en listeners
 asíncronos. El correo transaccional se envía en plantillas Thymeleaf desde
-un thread pool dedicado (`emailExecutor`, 2–4 hilos).
+un thread pool dedicado (`emailExecutor`, 2-4 hilos).
 
 ### Eventos publicados
 
@@ -782,11 +885,11 @@ excepción**: el flujo de negocio del request original no se rompe.
 
 Ubicadas en `src/main/resources/templates/email/`:
 
-- `welcome.html` — Bienvenida al registrarse
-- `flashcards-ready.html` — Notificación de flashcards generadas
-- `badge-earned.html` — Notificación de badge desbloqueado
+- `welcome.html` - Bienvenida al registrarse
+- `flashcards-ready.html` - Notificación de flashcards generadas
+- `badge-earned.html` - Notificación de badge desbloqueado
 
-### Tests
+### Tests de Email y Eventos
 
 | Test                                  | Tipo            | Verifica                                                    |
 |---------------------------------------|-----------------|-------------------------------------------------------------|
@@ -799,7 +902,7 @@ Ubicadas en `src/main/resources/templates/email/`:
 
 ---
 
-## Configuración
+## Variables de Entorno
 
 Copiar `.env.example` a `.env` y completar los valores:
 
@@ -816,7 +919,7 @@ Copiar `.env.example` a `.env` y completar los valores:
 | `JWT_SECRET`         | *(inseguro por defecto)*                          | **Cambiar en producción** (min 32 chars) |
 | `JWT_EXPIRATION_MS`  | `3600000`                                         | Expiración JWT en milisegundos (1h)      |
 | `ANTHROPIC_API_KEY`  | *(requerido para IA)*                             | API key de Anthropic para Claude Haiku   |
-| `MAIL_ENABLED`       | `false`                                           | Habilita envío SMTP real (ver [Eventos y Email](#eventos-y-email)) |
+| `MAIL_ENABLED`       | `false`                                           | Habilita envío SMTP real (ver [Eventos y Asincronía](#eventos-y-asincronía)) |
 | `MAIL_HOST`          | `smtp.gmail.com`                                  | Servidor SMTP                            |
 | `MAIL_PORT`          | `587`                                             | Puerto SMTP                              |
 | `MAIL_USER`          | *(vacío)*                                         | Usuario SMTP                             |
@@ -829,7 +932,9 @@ Copiar `.env.example` a `.env` y completar los valores:
 
 ---
 
-## Ejecución con Docker
+## Instalación y Ejecución
+
+### Ejecución con Docker
 
 ```bash
 # Copiar variables de entorno
@@ -860,7 +965,7 @@ bash scripts/multitenancy-smoke-test.sh
 
 ---
 
-## Ejecución Local
+### Ejecución Local
 
 Requiere Java 21 y PostgreSQL corriendo localmente.
 
@@ -877,7 +982,7 @@ ANTHROPIC_API_KEY=sk-ant-... \
 ./mvnw spring-boot:run
 ```
 
-### Probar rÃ¡pido en Swagger
+### Probar rápido en Swagger
 
 Con la app levantada, abre:
 
@@ -895,7 +1000,7 @@ Orden recomendado para validar el flujo completo:
 }
 ```
 
-Guarda el `id` de la instituciÃ³n creada.
+Guarda el `id` de la institución creada.
 
 2. `POST /api/v1/auth/register`
 
@@ -933,16 +1038,20 @@ Bearer <accessToken>
 - `GET /api/v1/rewards`
 - `POST /api/v1/auth/logout`
 
-Si un endpoint protegido devuelve `403`, normalmente falta autorizar con el JWT o el rol del usuario no tiene permiso para esa operaciÃ³n.
+Si un endpoint protegido devuelve `403`, normalmente falta autorizar con el JWT o el rol del usuario no tiene permiso para esa operación.
 
 ---
 
-## Tests
+## Testing y Manejo de Errores
 
 ```bash
 # Ejecutar todos los tests
 ./mvnw test
 ```
+
+### Manejo de Errores
+
+El proyecto utiliza @RestControllerAdvice para centralizar respuestas de error y devolver estructuras consistentes con código HTTP, mensaje, timestamp y path. Se manejan excepciones de validación, credenciales inválidas, access denied, entidades no encontradas, refresh tokens expirados o revocados y violaciones de tenant.
 
 ### Cobertura de Tests
 
@@ -980,7 +1089,13 @@ Si un endpoint protegido devuelve `403`, normalmente falta autorizar con el JWT 
 
 ---
 
-## GitHub Actions (CI)
+## GitHub & Project Management
+
+### Gestión del trabajo
+
+La planificación del proyecto se apoyó en issues y seguimiento de tareas del repositorio. El archivo issues.md muestra la división del trabajo en requerimientos concretos, criterios de aceptación, riesgo y estado. Este enfoque permitió asignar tareas por módulo, separar cambios grandes en issues manejables y mantener visibilidad sobre pendientes como seguridad, OpenAPI, email y multitenancy.
+
+### GitHub Actions y CI
 
 El repositorio incluye un pipeline de integración continua en `.github/workflows/ci.yml` que se ejecuta automáticamente en cada `push` y `pull_request` a las ramas `main` y `develop`.
 
@@ -991,8 +1106,8 @@ El repositorio incluye un pipeline de integración continua en `.github/workflow
 3. **Service container PostgreSQL 16** (alpine) levantado por el runner con healthcheck `pg_isready`. Se expone en `localhost:5432` y se inyecta vía las variables `DB_URL`, `DB_USER`, `DB_PASSWORD`.
 4. **Build + tests + cobertura**: `./mvnw -B -ntp verify`. La fase `verify` dispara el plugin JaCoCo (`jacoco-maven-plugin` 0.8.12), que genera el reporte en `target/site/jacoco`.
 5. **Artifacts**:
-   - `jacoco-report` → HTML/XML de cobertura (`target/site/jacoco`).
-   - `surefire-reports` → resultados detallados de cada test.
+   - `jacoco-report` -> HTML/XML de cobertura (`target/site/jacoco`).
+   - `surefire-reports` -> resultados detallados de cada test.
 
 Ambos artifacts se suben con `if: always()` para tenerlos disponibles incluso si los tests fallan.
 
@@ -1007,7 +1122,7 @@ Ambos artifacts se suben con `if: always()` para tenerlos disponibles incluso si
 | `MAIL_ENABLED`       | `false`                                                               |
 | `ANTHROPIC_API_KEY`  | vacío (las llamadas a IA se ejercitan con mocks en tests)             |
 
-### Cobertura de tests (JaCoCo)
+### Cobertura de Tests (JaCoCo)
 
 Para generar el reporte de cobertura en local:
 
@@ -1018,22 +1133,22 @@ open target/site/jacoco/index.html   # macOS
 
 El plugin está declarado en `pom.xml` con dos ejecuciones:
 
-- `prepare-agent` → instrumenta los tests (binding por defecto a `initialize`).
-- `report` → genera el HTML/XML en `verify`.
+- `prepare-agent` -> instrumenta los tests (binding por defecto a `initialize`).
+- `report` -> genera el HTML/XML en `verify`.
 
 ### Branch protection sugerida
 
 Una vez verificados 2-3 PRs en verde, se recomienda activar en GitHub:
 
-- **Settings → Branches → Branch protection rules → `main`**
-  - Require status checks to pass before merging → marcar el check **CI / build-test**.
-  - Require pull request reviews → al menos 1 reviewer.
+- **Settings -> Branches -> Branch protection rules -> `main`**
+  - Require status checks to pass before merging -> marcar el check **CI / build-test**.
+  - Require pull request reviews -> al menos 1 reviewer.
 
 Esto impide mergear código que no compile o que rompa tests.
 
 ### Descargar artifacts
 
-En cada run (Actions → CI → run específico) aparecen los artifacts al final. El `jacoco-report` se puede descomprimir y abrir `index.html` para inspeccionar líneas cubiertas/no cubiertas por paquete.
+En cada run (Actions -> CI -> run específico) aparecen los artifacts al final. El `jacoco-report` se puede descomprimir y abrir `index.html` para inspeccionar líneas cubiertas/no cubiertas por paquete.
 
 ---
 
@@ -1045,8 +1160,8 @@ En cada run (Actions → CI → run específico) aparecen los artifacts al final
 |----------------------|----------------------------------------------------------------------------------------|
 | API base             | `https://streakstudy.example.com/api/v1`                                               |
 | Health check         | `https://streakstudy.example.com/actuator/health`                                      |
-| Postman Collection   | [`postman_collection.json`](./postman_collection.json) _(pendiente — ver Issue #2)_     |
-| Swagger / OpenAPI    | `https://streakstudy.example.com/swagger-ui.html` _(pendiente — ver Issue #5)_          |
+| Postman Collection   | [`postman_collection.json`](./postman_collection.json) _(pendiente - ver Issue #2)_     |
+| Swagger / OpenAPI    | `https://streakstudy.example.com/swagger-ui.html` _(pendiente - ver Issue #5)_          |
 
 ### Variables de entorno mínimas en producción
 
@@ -1055,7 +1170,7 @@ En cada run (Actions → CI → run específico) aparecen los artifacts al final
 | `DB_URL`            | `jdbc:postgresql://host:5432/streakstudy_db`                    |
 | `DB_USER`           | Usuario con permisos sobre la base                               |
 | `DB_PASSWORD`       | Secret en el provider (Render/Railway/Fly env var)               |
-| `JWT_SECRET`        | ≥ 256 bits; rotar fuera del repo                                 |
+| `JWT_SECRET`        | >= 256 bits; rotar fuera del repo                                 |
 | `MAIL_ENABLED`      | `true` en prod; `false` deshabilita SMTP y solo loguea           |
 | `ANTHROPIC_API_KEY` | Requerido para generación de flashcards                          |
 | `FRONTEND_URL`      | Origen del frontend para CORS y links de reset password          |
@@ -1063,12 +1178,51 @@ En cada run (Actions → CI → run específico) aparecen los artifacts al final
 
 ---
 
+## Conclusiones
+
+### Logros del Proyecto
+
+El proyecto logró construir una base backend robusta para una plataforma educativa multi-tenant con autenticación moderna, gamificación, procesamiento documental e integración de IA. Se consiguió una API organizada, documentada y preparada para operar con varias instituciones manteniendo aislamiento de datos.
+
+### Aprendizajes Clave
+
+Los aprendizajes más importantes fueron el valor de una arquitectura desacoplada, la complejidad real de seguridad y multitenancy, y la necesidad de automatizar pruebas e integración continua desde etapas tempranas. También fue clave entender que asincronía, eventos y manejo global de errores no son extras, sino piezas necesarias para un backend confiable.
+
+### Trabajo Futuro
+
+Como trabajo futuro, se propone endurecer aún más permisos administrativos, agregar más observabilidad, incorporar colas o brokers para procesos pesados, mejorar reportes analíticos para instituciones y extender la experiencia de estudio con recomendaciones personalizadas basadas en progreso y uso de flashcards.
+
 ## Equipo
 
-Proyecto académico desarrollado para el curso **Desarrollo Basado en Plataformas (DBP)** — UTEC, 2026.
+| Integrante | Código |
+|---|---|
+| Alfaro Quispe, Gloria | 202310083 |
+| Toro Leddihn, Benjamin | 202510596 |
+| Leon Pantaleon, Jobeth | 202510035 |
+| Alvarez Beraun, Valentina | 202310488 |
+| Sandoval Toro, Daniel | 202310533 |
+
+---
+
+## Referencias
+
+- Documentación oficial de Spring Boot
+- Documentación oficial de Spring Security
+- Documentación oficial de PostgreSQL
+- RFC 7519 JSON Web Token (JWT)
+- OpenAPI Specification y Swagger UI
+- Documentación de Testcontainers
+- Documentación de Anthropic API
 
 ---
 
 ## Licencia
 
 Código liberado para uso académico bajo los términos del curso. Para uso fuera del contexto académico, contactar al equipo.
+
+
+
+
+
+
+
