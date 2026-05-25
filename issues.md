@@ -20,12 +20,12 @@
 | 4 | ~~API hardening (/v1, CORS, path, HMNR)~~ | 5.2, 6.1, 7.1 | ~0.6 | 4h | ✅ mergeado [#43](https://github.com/btoroled/DBP/pull/43) |
 | 5 | Swagger/OpenAPI | Bonus | ~0.3 | 2h | _por crear_ |
 | 6 | ~~Refresh tokens + UserDetailsService~~ | 6.2 | ~0.3 | 4h | ✅ mergeado [#44](https://github.com/btoroled/DBP/pull/44) |
-| 7 | @PreAuthorize + validaciones DTO | 1.3, 6.3 | ~0.5 | 4h | _por crear_ |
+| 7 | ~~@PreAuthorize + validaciones DTO~~ | 1.3, 6.3 | ~0.5 | 4h | ✅ implementado (branch `issue-7-preauthorize-dto-validations`, PR pendiente) |
 | 8 | Tests faltantes (Deck, Flashcard, Doc, Job) | 4.1, 4.2, 4.4 | ~0.8 | 1 día | _por crear_ |
 | 9 | Logging SLF4J + cleanup + README final | 10.1 + bonus | ~0.2 | 2h | _por crear_ |
 | 10 | ~~Password reset por email~~ | Extensión §6.2 + §8.3 | ~0.2 (bonus) | 4-6h | ✅ implementado (branch `issue-5-password-reset-email`, PR pendiente) |
 
-**Orden de mergeo sugerido:** ~~#3~~ → ~~#4~~ → ~~#6~~ → ~~#1~~ → ~~#10~~ → #7 → #5 → #8 → ~~#2~~ → #9
+**Orden de mergeo sugerido:** ~~#3~~ → ~~#4~~ → ~~#6~~ → ~~#1~~ → ~~#10~~ → ~~#7~~ → #5 → #8 → ~~#2~~ → #9
 
 ---
 

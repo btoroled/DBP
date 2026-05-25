@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,8 +19,17 @@ import com.streakstudy.application.service.CourseService;
 
 import jakarta.validation.Valid;
 
+/**
+ * Endpoints de cursos. Matriz de roles (Issue #7):
+ * <ul>
+ *   <li>{@code POST /courses}: TEACHER, INSTITUTION_ADMIN, SUPER_ADMIN</li>
+ *   <li>{@code GET /courses[/{id}]}: cualquier usuario autenticado</li>
+ *   <li>{@code DELETE /courses/{id}}: INSTITUTION_ADMIN, SUPER_ADMIN</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/v1/courses")
+@PreAuthorize("isAuthenticated()")
 public class CourseController {
 
     private final CourseService service;
@@ -29,6 +39,7 @@ public class CourseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('TEACHER','INSTITUTION_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<CourseResponse> create(@Valid @RequestBody CreateCourseRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
@@ -44,6 +55,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('INSTITUTION_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteByIdForCurrentTenant(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

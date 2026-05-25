@@ -33,11 +33,13 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/security/SecurityConfigTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/tenancy/TenantContextTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/AuthControllerTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/CourseControllerAuthorizationTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/CourseControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/DocumentControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/FlashcardControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/InstitutionControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/RewardItemControllerTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/StoreControllerAuthorizationTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/StoreControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/UserProgressControllerTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/web/advice/GlobalExceptionHandlerTest.java
