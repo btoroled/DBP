@@ -31,6 +31,6 @@ USER spring
 EXPOSE 8080
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
-    CMD curl -fsS http://localhost:8080/actuator/health/liveness || exit 1
+    CMD curl -fsS "http://localhost:${PORT:-8080}/actuator/health/liveness" || exit 1
 
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
