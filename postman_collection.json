@@ -1,0 +1,1724 @@
+{
+  "info": {
+    "_postman_id": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+    "name": "StreakStudy API v1",
+    "description": "Colección E2E para la API StreakStudy v1. Ejecutar con el Runner en orden de carpeta 00 → 09.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{baseUrl}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 — Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response tiene body\", () => pm.response.json());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health"]
+            },
+            "description": "Verifica que la API está en línea y respondiendo."
+          },
+          "response": [
+            {
+              "name": "200 OK — API Healthy",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"status\": \"UP\",\n  \"timestamp\": \"2025-01-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 — Auth",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Body contiene id de usuario\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test+{{$timestamp}}@streakstudy.com\",\n  \"password\": \"Password123!\",\n  \"institutionId\": {{institutionId}}\n}",
+              "options": {
+                "raw": {"language": "json"}
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Registra un nuevo usuario. Usa `{{$timestamp}}` para generar emails únicos en cada ejecución del Runner."
+          },
+          "response": [
+            {
+              "name": "201 Created — Usuario registrado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"test+1700000000@streakstudy.com\",\n  \"password\": \"Password123!\",\n  \"institutionId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4-0001\",\n  \"email\": \"test+1700000000@streakstudy.com\",\n  \"institutionId\": 1,\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "409 Conflict — Email ya existe",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"existing@streakstudy.com\",\n  \"password\": \"Password123!\",\n  \"institutionId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "register"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"CONFLICT\",\n  \"message\": \"El email ya está registrado.\",\n  \"statusCode\": 409\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Body contiene accessToken\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('accessToken');",
+                  "  pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test(\"Body contiene user.id\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.user).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Encadenar variables de entorno para el flujo E2E",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"accessToken\", body.accessToken);",
+                  "pm.environment.set(\"userId\", body.user.id);",
+                  "console.log(\"[Auth] accessToken seteado:\", body.accessToken.substring(0, 20) + \"...\");",
+                  "console.log(\"[Auth] userId seteado:\", body.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@streakstudy.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {"language": "json"}
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Autentica al usuario. El script Post-response extrae y guarda `accessToken` y `userId` en el entorno automáticamente."
+          },
+          "response": [
+            {
+              "name": "200 OK — Login exitoso",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@streakstudy.com\",\n  \"password\": \"Password123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example\",\n  \"user\": {\n    \"id\": \"a1b2c3d4-0001\",\n    \"email\": \"admin@streakstudy.com\",\n    \"institutionId\": 1\n  }\n}"
+            },
+            {
+              "name": "401 Unauthorized — Credenciales inválidas",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@streakstudy.com\",\n  \"password\": \"WrongPass!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "login"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"UNAUTHORIZED\",\n  \"message\": \"Email o contraseña incorrectos.\",\n  \"statusCode\": 401\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Body contiene id del usuario autenticado\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('id');",
+                  "  pm.expect(body.id).to.eql(pm.environment.get('userId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Retorna los datos del usuario actualmente autenticado (hereda Bearer Token de la colección)."
+          },
+          "response": [
+            {
+              "name": "200 OK — Perfil del usuario",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4-0001\",\n  \"email\": \"admin@streakstudy.com\",\n  \"institutionId\": 1,\n  \"streak\": 5,\n  \"coins\": 120\n}"
+            },
+            {
+              "name": "401 Unauthorized — Token inválido o ausente",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "me"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"UNAUTHORIZED\",\n  \"message\": \"Token de acceso inválido o expirado.\",\n  \"statusCode\": 401\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 — Institutions",
+      "item": [
+        {
+          "name": "Create Institution",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"institutionId\", body.id);",
+                  "console.log(\"[Institutions] institutionId seteado:\", body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Universidad Nacional de Pruebas\",\n  \"country\": \"PE\",\n  \"domain\": \"unp.edu.pe\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/institutions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "institutions"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created — Institución creada",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Universidad Nacional de Pruebas\",\n  \"country\": \"PE\",\n  \"domain\": \"unp.edu.pe\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/institutions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "institutions"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": 2,\n  \"name\": \"Universidad Nacional de Pruebas\",\n  \"country\": \"PE\",\n  \"domain\": \"unp.edu.pe\",\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Datos inválidos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/institutions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "institutions"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"El campo 'name' es requerido.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Institution by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Body tiene id correcto\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(String(body.id)).to.eql(pm.environment.get('institutionId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/institutions/{{institutionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "institutions", "{{institutionId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Institución encontrada",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/institutions/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "institutions", "1"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Universidad de Ejemplo\",\n  \"country\": \"PE\",\n  \"domain\": \"ejemplo.edu.pe\"\n}"
+            },
+            {
+              "name": "404 Not Found — Institución no existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/institutions/9999", "host": ["{{baseUrl}}"], "path": ["api", "v1", "institutions", "9999"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Institución con id 9999 no encontrada.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 — Courses (CRUD)",
+      "item": [
+        {
+          "name": "Create Course",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"courseId\", body.id);",
+                  "console.log(\"[Courses] courseId seteado:\", body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Algoritmos y Estructuras de Datos\",\n  \"code\": \"CS101\",\n  \"institutionId\": {{institutionId}}\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created — Curso creado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Algoritmos y Estructuras de Datos\",\n  \"code\": \"CS101\",\n  \"institutionId\": 1\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/courses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"c1d2e3f4-0001\",\n  \"name\": \"Algoritmos y Estructuras de Datos\",\n  \"code\": \"CS101\",\n  \"institutionId\": 1,\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Datos inválidos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"code\": \"CS101\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/courses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"El campo 'name' es requerido.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Courses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response es un array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Lista de cursos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/courses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"c1d2e3f4-0001\",\n    \"name\": \"Algoritmos y Estructuras de Datos\",\n    \"code\": \"CS101\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Course by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", "{{courseId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Curso encontrado",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/courses/c1d2e3f4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses", "c1d2e3f4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"c1d2e3f4-0001\",\n  \"name\": \"Algoritmos y Estructuras de Datos\",\n  \"code\": \"CS101\",\n  \"institutionId\": 1\n}"
+            },
+            {
+              "name": "404 Not Found — Curso no existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/courses/invalid-id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses", "invalid-id"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Curso con id invalid-id no encontrado.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Course",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Algoritmos Avanzados\",\n  \"code\": \"CS201\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", "{{courseId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Curso actualizado",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Algoritmos Avanzados\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/courses/c1d2e3f4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses", "c1d2e3f4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"c1d2e3f4-0001\",\n  \"name\": \"Algoritmos Avanzados\",\n  \"code\": \"CS201\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Course",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 204 No Content\", () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", "{{courseId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "204 No Content — Curso eliminado",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/courses/c1d2e3f4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses", "c1d2e3f4-0001"]}
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            },
+            {
+              "name": "404 Not Found — Curso no existe",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/courses/invalid-id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "courses", "invalid-id"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Curso no encontrado.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 — Decks (CRUD)",
+      "item": [
+        {
+          "name": "Create Deck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Body contiene id del deck\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Encadenar deckId para requests subsecuentes",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"deckId\", body.id);",
+                  "console.log(\"[Decks] deckId seteado:\", body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Deck de Prueba E2E\",\n  \"description\": \"Generado automáticamente por el Runner\",\n  \"courseId\": \"{{courseId}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks"]
+            },
+            "description": "Crea un nuevo deck. El script Post-response guarda el `id` generado en `{{deckId}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created — Deck creado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"title\": \"Deck de Prueba E2E\",\n  \"description\": \"Generado automáticamente por el Runner\",\n  \"courseId\": \"c1d2e3f4-0001\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/decks", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"d1e2f3a4-0001\",\n  \"title\": \"Deck de Prueba E2E\",\n  \"description\": \"Generado automáticamente por el Runner\",\n  \"courseId\": \"c1d2e3f4-0001\",\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Título vacío",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"description\": \"Sin título\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/decks", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"El campo 'title' es requerido.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Deck by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Body tiene id correcto\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql(pm.environment.get('deckId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks/{{deckId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks", "{{deckId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Deck encontrado",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/d1e2f3a4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "d1e2f3a4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"d1e2f3a4-0001\",\n  \"title\": \"Deck de Prueba E2E\",\n  \"description\": \"Generado automáticamente por el Runner\",\n  \"flashcardsCount\": 0\n}"
+            },
+            {
+              "name": "404 Not Found — Deck no existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/invalid-id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "invalid-id"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Deck con id invalid-id no encontrado.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Deck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Deck Actualizado\",\n  \"description\": \"Descripción modificada en E2E\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks/{{deckId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks", "{{deckId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Deck actualizado",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"title\": \"Deck Actualizado\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/d1e2f3a4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "d1e2f3a4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"d1e2f3a4-0001\",\n  \"title\": \"Deck Actualizado\",\n  \"description\": \"Descripción modificada en E2E\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Deck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 204 No Content\", () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks/{{deckId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks", "{{deckId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "204 No Content — Deck eliminado",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/d1e2f3a4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "d1e2f3a4-0001"]}
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            },
+            {
+              "name": "404 Not Found — Deck no existe",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/invalid-id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "invalid-id"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Deck no encontrado.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 — Flashcards (CRUD)",
+      "item": [
+        {
+          "name": "Create Flashcard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Body contiene id de flashcard\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Encadenar flashcardId para requests subsecuentes",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"flashcardId\", body.id);",
+                  "console.log(\"[Flashcards] flashcardId seteado:\", body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deckId\": \"{{deckId}}\",\n  \"front\": \"¿Cuál es la complejidad de Binary Search?\",\n  \"back\": \"O(log n)\",\n  \"hint\": \"Piensa en divisiones sucesivas\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/flashcards",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "flashcards"]
+            },
+            "description": "Crea una nueva flashcard en el deck especificado. El script Post-response guarda el `id` generado en `{{flashcardId}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created — Flashcard creada",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"deckId\": \"d1e2f3a4-0001\",\n  \"front\": \"¿Cuál es la complejidad de Binary Search?\",\n  \"back\": \"O(log n)\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"f1c2a3r4-0001\",\n  \"deckId\": \"d1e2f3a4-0001\",\n  \"front\": \"¿Cuál es la complejidad de Binary Search?\",\n  \"back\": \"O(log n)\",\n  \"hint\": \"Piensa en divisiones sucesivas\",\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Campos requeridos faltantes",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"deckId\": \"d1e2f3a4-0001\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"Los campos 'front' y 'back' son requeridos.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Flashcard by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/flashcards/{{flashcardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "flashcards", "{{flashcardId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Flashcard encontrada",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards/f1c2a3r4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards", "f1c2a3r4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"f1c2a3r4-0001\",\n  \"deckId\": \"d1e2f3a4-0001\",\n  \"front\": \"¿Cuál es la complejidad de Binary Search?\",\n  \"back\": \"O(log n)\"\n}"
+            },
+            {
+              "name": "404 Not Found — Flashcard no existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards/invalid-id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards", "invalid-id"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Flashcard con id invalid-id no encontrada.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Flashcard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"front\": \"¿Cuál es la complejidad de Binary Search? (actualizado)\",\n  \"back\": \"O(log n) — tiempo logarítmico\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/flashcards/{{flashcardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "flashcards", "{{flashcardId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Flashcard actualizada",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"front\": \"Pregunta actualizada\",\n  \"back\": \"Respuesta actualizada\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards/f1c2a3r4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards", "f1c2a3r4-0001"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"f1c2a3r4-0001\",\n  \"front\": \"Pregunta actualizada\",\n  \"back\": \"Respuesta actualizada\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Flashcard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 204 No Content\", () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/flashcards/{{flashcardId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "flashcards", "{{flashcardId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "204 No Content — Flashcard eliminada",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/flashcards/f1c2a3r4-0001", "host": ["{{baseUrl}}"], "path": ["api", "v1", "flashcards", "f1c2a3r4-0001"]}
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 — Documents",
+      "item": [
+        {
+          "name": "Upload Document (PDF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set(\"documentId\", body.id);",
+                  "console.log(\"[Documents] documentId seteado:\", body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Seleccionar un archivo PDF desde tu sistema"
+                },
+                {
+                  "key": "courseId",
+                  "value": "{{courseId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Documento de Prueba E2E",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "description": "Sube un documento PDF. Usar form-data: campo `file` (tipo File), `courseId` y `title`."
+          },
+          "response": [
+            {
+              "name": "201 Created — Documento subido",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {"key": "file", "type": "file", "src": "document.pdf"},
+                    {"key": "courseId", "value": "c1d2e3f4-0001", "type": "text"},
+                    {"key": "title", "value": "Notas de clase", "type": "text"}
+                  ]
+                },
+                "url": {"raw": "{{baseUrl}}/api/v1/documents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"id\": \"doc1a2b3c-0001\",\n  \"title\": \"Notas de clase\",\n  \"courseId\": \"c1d2e3f4-0001\",\n  \"fileUrl\": \"https://storage.streakstudy.com/documents/doc1a2b3c-0001.pdf\",\n  \"status\": \"PROCESSING\",\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Sin archivo adjunto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {"key": "courseId", "value": "c1d2e3f4-0001", "type": "text"}
+                  ]
+                },
+                "url": {"raw": "{{baseUrl}}/api/v1/documents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"Se requiere adjuntar un archivo PDF.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 — User Progress",
+      "item": [
+        {
+          "name": "Submit Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK o 201\", () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test(\"Body contiene streak actualizado\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('streak');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flashcardId\": \"{{flashcardId}}\",\n  \"rating\": 4,\n  \"timeSpentSeconds\": 15\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/progress/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "progress", "review"]
+            },
+            "description": "Registra la revisión de una flashcard por el usuario autenticado. Rating: 1-5."
+          },
+          "response": [
+            {
+              "name": "200 OK — Review registrada",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"flashcardId\": \"f1c2a3r4-0001\",\n  \"rating\": 4,\n  \"timeSpentSeconds\": 15\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/users/me/progress/review", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", "me", "progress", "review"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"flashcardId\": \"f1c2a3r4-0001\",\n  \"rating\": 4,\n  \"streak\": 6,\n  \"coinsEarned\": 10,\n  \"nextReviewAt\": \"2025-01-03T00:00:00.000Z\"\n}"
+            },
+            {
+              "name": "400 Bad Request — Rating fuera de rango",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"flashcardId\": \"f1c2a3r4-0001\",\n  \"rating\": 10\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/users/me/progress/review", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", "me", "progress", "review"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"El campo 'rating' debe estar entre 1 y 5.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Body contiene datos de progreso\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('streak');",
+                  "  pm.expect(body).to.have.property('totalReviews');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "progress"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Progreso del usuario",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/users/me/progress", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", "me", "progress"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"userId\": \"a1b2c3d4-0001\",\n  \"streak\": 6,\n  \"longestStreak\": 14,\n  \"totalReviews\": 42,\n  \"coins\": 130,\n  \"badges\": [\"FIRST_REVIEW\", \"WEEK_STREAK\"]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 — Leaderboard",
+      "item": [
+        {
+          "name": "Get Leaderboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response es un array\", () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "pm.test(\"Cada entrada tiene userId y streak\", () => {",
+                  "  const body = pm.response.json();",
+                  "  if (body.length > 0) {",
+                  "    pm.expect(body[0]).to.have.property('userId');",
+                  "    pm.expect(body[0]).to.have.property('streak');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "leaderboard"],
+              "query": [
+                {"key": "limit", "value": "10", "disabled": true},
+                {"key": "institutionId", "value": "{{institutionId}}", "disabled": true}
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Leaderboard global",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/leaderboard", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leaderboard"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "[\n  {\"rank\": 1, \"userId\": \"a1b2c3d4-0001\", \"email\": \"top@streakstudy.com\", \"streak\": 30},\n  {\"rank\": 2, \"userId\": \"b2c3d4e5-0002\", \"email\": \"second@streakstudy.com\", \"streak\": 22}\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09 — Store",
+      "item": [
+        {
+          "name": "Buy Streak Freeze",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK o 201\", () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test(\"Compra confirmada\", () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('success').that.equals(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/store/streak-freeze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "store", "streak-freeze"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Streak Freeze comprado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"quantity\": 1\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/store/streak-freeze", "host": ["{{baseUrl}}"], "path": ["api", "v1", "store", "streak-freeze"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"item\": \"STREAK_FREEZE\",\n  \"quantity\": 1,\n  \"coinsSpent\": 50,\n  \"coinsRemaining\": 80\n}"
+            },
+            {
+              "name": "400 Bad Request — Coins insuficientes",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"quantity\": 100\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/store/streak-freeze", "host": ["{{baseUrl}}"], "path": ["api", "v1", "store", "streak-freeze"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"Coins insuficientes para completar la compra.\",\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Buy Badge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status es 200 OK o 201\", () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"badgeId\": \"GOLD_SCHOLAR\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/store/badges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "store", "badges"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK — Badge adquirido",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"badgeId\": \"GOLD_SCHOLAR\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/store/badges", "host": ["{{baseUrl}}"], "path": ["api", "v1", "store", "badges"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"badge\": \"GOLD_SCHOLAR\",\n  \"coinsSpent\": 200,\n  \"coinsRemaining\": 0\n}"
+            },
+            {
+              "name": "409 Conflict — Badge ya adquirido",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"badgeId\": \"GOLD_SCHOLAR\"\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/store/badges", "host": ["{{baseUrl}}"], "path": ["api", "v1", "store", "badges"]}
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"CONFLICT\",\n  \"message\": \"El usuario ya posee el badge GOLD_SCHOLAR.\",\n  \"statusCode\": 409\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 — Errors (Documentación)",
+      "description": "Carpeta de documentación de errores. Contiene ejemplos guardados de respuestas de error estándar de la API para referencia del equipo.",
+      "item": [
+        {
+          "name": "[400] Bad Request — Ejemplo",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks"]
+            },
+            "description": "Ejemplo documentado de error 400. Body vacío para triggear validación."
+          },
+          "response": [
+            {
+              "name": "400 Bad Request — Validación fallida",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/decks", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks"]}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"BAD_REQUEST\",\n  \"message\": \"Validación fallida: campos requeridos ausentes o con formato inválido.\",\n  \"details\": [\n    {\"field\": \"title\", \"issue\": \"El campo es requerido\"},\n    {\"field\": \"courseId\", \"issue\": \"Debe ser un UUID válido\"}\n  ],\n  \"statusCode\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "[401] Unauthorized — Ejemplo",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Ejemplo documentado de error 401. Llama a /me sin token."
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized — Sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"]}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"UNAUTHORIZED\",\n  \"message\": \"Token de acceso requerido. Por favor autentícate con POST /api/v1/auth/login.\",\n  \"statusCode\": 401\n}"
+            }
+          ]
+        },
+        {
+          "name": "[403] Forbidden — Ejemplo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/institutions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "institutions", "1"]
+            },
+            "description": "Ejemplo documentado de error 403. Intento de eliminar un recurso sin permisos de admin."
+          },
+          "response": [
+            {
+              "name": "403 Forbidden — Sin permisos",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/institutions/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "institutions", "1"]}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"FORBIDDEN\",\n  \"message\": \"No tienes permisos para realizar esta acción. Se requiere rol ADMIN.\",\n  \"statusCode\": 403\n}"
+            }
+          ]
+        },
+        {
+          "name": "[404] Not Found — Ejemplo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/decks/00000000-0000-0000-0000-000000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "decks", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Ejemplo documentado de error 404. Busca un deck con UUID que no existe."
+          },
+          "response": [
+            {
+              "name": "404 Not Found — Recurso inexistente",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/v1/decks/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "v1", "decks", "00000000-0000-0000-0000-000000000000"]}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"NOT_FOUND\",\n  \"message\": \"Deck con id 00000000-0000-0000-0000-000000000000 no encontrado.\",\n  \"statusCode\": 404\n}"
+            }
+          ]
+        },
+        {
+          "name": "[409] Conflict — Ejemplo",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@streakstudy.com\",\n  \"password\": \"Password123!\",\n  \"institutionId\": 1\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Ejemplo documentado de error 409. Registra un email que ya existe en el sistema."
+          },
+          "response": [
+            {
+              "name": "409 Conflict — Email duplicado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"email\": \"admin@streakstudy.com\",\n  \"password\": \"Password123!\",\n  \"institutionId\": 1\n}"},
+                "url": {"raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"]}
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "cookie": [],
+              "body": "{\n  \"error\": \"CONFLICT\",\n  \"message\": \"El email admin@streakstudy.com ya está registrado en el sistema.\",\n  \"statusCode\": 409\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
