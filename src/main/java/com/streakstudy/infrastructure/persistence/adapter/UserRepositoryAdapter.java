@@ -3,8 +3,6 @@ package com.streakstudy.infrastructure.persistence.adapter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 
@@ -104,6 +102,14 @@ public class UserRepositoryAdapter implements UserRepository {
     public Optional<User> findById(Long id) {
         return jpa.findById(id)
                 .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findLeaderboardByInstitutionId(Long institutionId) {
+        return jpa.findLeaderboardByInstitutionId(institutionId)
+                .stream()
+                .map(UserMapper::toDomain)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override

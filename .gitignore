@@ -29,6 +29,7 @@ logs/
 HELP.md
 spring-shell.log
 
+
 # ─── Cobertura ──────────────────────────────────────────
 **/jacoco.exec
 **/coverage/

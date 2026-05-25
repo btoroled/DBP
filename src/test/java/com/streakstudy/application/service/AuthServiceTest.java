@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.streakstudy.application.dto.AuthResponse;
 import com.streakstudy.application.dto.LoginRequest;
@@ -42,13 +43,15 @@ class AuthServiceTest {
     @Mock InstitutionRepository institutions;
     @Mock PasswordHasher hasher;
     @Mock TokenIssuer tokens;
+    @Mock RefreshTokenService refreshTokens;
+    @Mock ApplicationEventPublisher events;
 
     @InjectMocks AuthService service;
 
     private final Institution inst = new Institution(1L, "UTEC", "utec", true, Instant.now());
 
     @Test
-    void register_creaUsuarioConInstitutionIdYDevuelveToken() {
+    void shouldCreateUserWithInstitutionIdAndReturnTokenWhenRegistering() {
         RegisterRequest req = new RegisterRequest(1L, "Alice@utec.edu", "Password123", "Alice");
         when(institutions.findById(1L)).thenReturn(Optional.of(inst));
         when(users.existsByEmail("alice@utec.edu")).thenReturn(false);
@@ -59,11 +62,15 @@ class AuthServiceTest {
         });
         when(tokens.issue(any(User.class))).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
+        when(refreshTokens.create(any(User.class))).thenReturn(
+            new RefreshTokenService.RefreshTokenGrant("refresh-token", Instant.now().plusSeconds(3600))
+        );
 
         AuthResponse resp = service.register(req);
 
-        assertThat(resp.token()).isEqualTo("jwt-token");
-        assertThat(resp.expiresInSeconds()).isEqualTo(3600L);
+        assertThat(resp.accessToken()).isEqualTo("jwt-token");
+        assertThat(resp.refreshToken()).isEqualTo("refresh-token");
+        assertThat(resp.expiresIn()).isEqualTo(3600L);
         assertThat(resp.institutionId()).isEqualTo(1L);
         assertThat(resp.email()).isEqualTo("alice@utec.edu"); // normalizado
         assertThat(resp.role()).isEqualTo(UserRole.STUDENT);
@@ -77,7 +84,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_lanzaSiInstitutionNoExiste() {
+    void shouldThrowWhenInstitutionDoesNotExistDuringRegister() {
         when(institutions.findById(99L)).thenReturn(Optional.empty());
         RegisterRequest req = new RegisterRequest(99L, "a@b.com", "Password123", "A");
 
@@ -88,7 +95,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void register_lanzaSiEmailYaExiste() {
+    void shouldThrowWhenEmailAlreadyExistsDuringRegister() {
         when(institutions.findById(1L)).thenReturn(Optional.of(inst));
         when(users.existsByEmail("a@b.com")).thenReturn(true);
 
@@ -98,22 +105,26 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_devuelveTokenCuandoCredencialesSonCorrectas() {
+    void shouldReturnTokenWhenLoginCredentialsAreCorrect() {
         User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 100, 3, LocalDate.now(), 1, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches("Password123", "HASHED")).thenReturn(true);
         when(tokens.issue(existing)).thenReturn("jwt-token");
         when(tokens.expirationSeconds()).thenReturn(3600L);
+        when(refreshTokens.create(existing)).thenReturn(
+            new RefreshTokenService.RefreshTokenGrant("refresh-token", Instant.now().plusSeconds(3600))
+        );
 
         AuthResponse resp = service.login(new LoginRequest("Alice@utec.edu", "Password123"));
 
-        assertThat(resp.token()).isEqualTo("jwt-token");
+        assertThat(resp.accessToken()).isEqualTo("jwt-token");
+        assertThat(resp.refreshToken()).isEqualTo("refresh-token");
         assertThat(resp.institutionId()).isEqualTo(1L);
         verify(tokens).issue(existing);
     }
 
     @Test
-    void login_lanzaCuandoEmailNoExiste() {
+    void shouldThrowWhenLoginEmailDoesNotExist() {
         when(users.findByEmail("ghost@x.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.login(new LoginRequest("ghost@x.com", "x")))
@@ -121,7 +132,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_lanzaCuandoPasswordEsIncorrecta() {
+    void shouldThrowWhenLoginPasswordIsIncorrect() {
         User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice", UserRole.STUDENT, Instant.now(), 0, 0, LocalDate.now(), 0, Set.of());
         when(users.findByEmail("alice@utec.edu")).thenReturn(Optional.of(existing));
         when(hasher.matches(eq("wrong"), anyString())).thenReturn(false);

@@ -22,10 +22,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class SecurityConfigTest {
     @Mock
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Mock
+    private JwtUserDetailsService jwtUserDetailsService;
 
     private final JwtAuthenticationFilter jwtFilter = mock(JwtAuthenticationFilter.class);
 
-    private final SecurityConfig config = new SecurityConfig(jwtFilter);
+    private final JwtUserDetailsService userDetailsService = mock(JwtUserDetailsService.class);
+
+    private final SecurityConfig config = new SecurityConfig(jwtFilter, userDetailsService);
 
     @Test
     void passwordEncoder_codificaYValidaContrasenasCorrectamente() {

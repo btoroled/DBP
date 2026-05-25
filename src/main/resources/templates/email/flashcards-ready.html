@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tus flashcards estan listas</title>
+</head>
+<body style="font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.5;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
+        <h1 style="color: #16a34a;">Flashcards generadas</h1>
+        <p>Hola <strong th:text="${fullName}">Estudiante</strong>,</p>
+        <p>
+            Tus <strong th:text="${flashcardCount}">N</strong> flashcards estan
+            listas para revisar en el deck
+            <strong th:text="${deckId}">--</strong>.
+        </p>
+        <p>
+            Abre la aplicacion y empieza la sesion de repaso para sumar XP.
+        </p>
+        <p style="margin-top: 32px; color: #6b7280; font-size: 12px;">
+            Job ID: <span th:text="${jobId}">--</span>
+        </p>
+    </div>
+</body>
+</html>

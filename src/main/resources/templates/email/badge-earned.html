@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo badge desbloqueado</title>
+</head>
+<body style="font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.5;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
+        <h1 style="color: #f59e0b;">Ganaste un nuevo badge!</h1>
+        <p>Hola <strong th:text="${fullName}">Estudiante</strong>,</p>
+        <p>
+            Acabas de desbloquear el badge
+            <strong th:text="${badgeDisplayName}">Badge</strong>.
+        </p>
+        <p th:text="${badgeDescription}">Descripcion del badge.</p>
+        <p>
+            Sigue acumulando XP y mantente activo para conseguir mas badges.
+        </p>
+    </div>
+</body>
+</html>

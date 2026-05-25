@@ -1,11 +1,12 @@
 package com.streakstudy.infrastructure.security;
 
 import java.io.IOException;
-import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -22,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * <ol>
  *   <li>Lee el header {@code Authorization: Bearer <jwt>}.</li>
  *   <li>Valida el token con {@link JwtService}.</li>
+ *   <li>Carga el usuario via {@link JwtUserDetailsService}.</li>
  *   <li>Popula {@code SecurityContext} con el principal autenticado.</li>
  *   <li>Popula {@link TenantContext} con el {@code institutionId} del claim.</li>
  *   <li>Limpia ambos al final del request (try/finally) para no contaminar
@@ -31,13 +33,16 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+    private final JwtUserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, JwtUserDetailsService userDetailsService) {
         this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -51,21 +56,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(BEARER_PREFIX.length()).trim();
             try {
                 JwtService.ParsedToken parsed = jwtService.parse(token);
-                AuthenticatedUserPrincipal principal = new AuthenticatedUserPrincipal(
-                    parsed.userId(), parsed.institutionId(), parsed.email(), parsed.role());
+                AuthenticatedUserPrincipal principal = userDetailsService.loadUserById(parsed.userId());
 
                 var auth = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,
-                    List.of(new SimpleGrantedAuthority(parsed.role().name()))
+                    principal.getAuthorities()
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                TenantContext.set(parsed.institutionId());
+                TenantContext.set(principal.institutionId());
                 tenantSet = true;
-            } catch (JwtException | IllegalArgumentException ex) {
-                System.out.println(" [ERROR JWT FILTER]: Falló la autenticación. Motivo: " + ex.getMessage());
-                ex.printStackTrace();
+            } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
+                log.warn("JWT auth failed: {}", ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

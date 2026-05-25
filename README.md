@@ -1,4 +1,6 @@
-# StreakStudy API
+﻿# StreakStudy API
+
+[![CI](https://github.com/btoroled/DBP/actions/workflows/ci.yml/badge.svg)](https://github.com/btoroled/DBP/actions/workflows/ci.yml)
 
 Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arquitectura hexagonal. Soporta multitenancy a nivel de institución educativa.
 
@@ -13,7 +15,7 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 * Gloria Alfaro Quispe
 ---
 
-## Tabla de Contenidos
+## Índice
 
 1. [Introducción](#1-introducción)
 2. [Identificación del Problema o Necesidad](#2-identificación-del-problema-o-necesidad)
@@ -194,6 +196,242 @@ Todos los errores interceptados por el manejador global se transforman y devuelv
 * **Aislamiento de Sesiones:** La API es *stateless*, mitigando riesgos de secuestro de sesión.
 * **Rate Limiting y Anti-enumeration:** Los endpoints de recuperación de contraseña responden siempre de manera neutra (202 Accepted) exista o no el correo, y cuentan con un límite de peticiones en memoria para prevenir ataques de fuerza bruta.
 
+**Refresh tokens (nuevo flujo):**
+```json
+POST /api/v1/auth/login
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "0b9f...c7a",
+  "expiresIn": 900,
+  "userId": 1,
+  "institutionId": 1,
+  "email": "alumno@utec.edu.pe",
+  "role": "STUDENT",
+  "xp": 0
+}
+```
+
+```json
+POST /api/v1/auth/refresh
+{
+  "refreshToken": "0b9f...c7a"
+}
+```
+
+```json
+POST /api/v1/auth/logout
+Authorization: Bearer <accessToken>
+{
+  "refreshToken": "0b9f...c7a"
+}
+```
+
+**Recuperación de contraseña (Issue #10):**
+
+| Método | Endpoint                          | Descripción                                 |
+|--------|-----------------------------------|---------------------------------------------|
+| POST   | `/api/v1/auth/password/forgot`    | Solicita email con link de reset -> 202     |
+| POST   | `/api/v1/auth/password/reset`     | Confirma reset con token -> 204             |
+
+```json
+POST /api/v1/auth/password/forgot
+{
+  "email": "alumno@utec.edu.pe"
+}
+```
+**Respuesta:** `202 Accepted` siempre - existe o no el email (anti-enumeration). Si el correo está habilitado (`MAIL_ENABLED=true`), se envía el link a `${FRONTEND_URL}/reset-password?token=...`.
+
+```json
+POST /api/v1/auth/password/reset
+{
+  "token": "<token-del-email>",
+  "newPassword": "MiNuevaPassword123"
+}
+```
+**Respuesta:** `204 No Content` cuando el token es válido.
+**Errores:** `400 invalid_password_reset_token` si no existe o ya fue usado · `410 password_reset_token_expired` si pasó el TTL (30 min por defecto).
+
+Características de seguridad:
+- Token de **un solo uso**: tras un reset exitoso, el token se marca como usado.
+- **Rotación**: solicitar un nuevo `/forgot` invalida todos los tokens previos activos del mismo email.
+- Solo se almacena el **SHA-256** del token en `password_reset_tokens.token_hash`; el plaintext nunca toca la BD ni los logs.
+- **Rate limit** in-memory: 5 requests/email/hora a `/forgot` (configurable). Excedido -> `429 Too Many Requests`.
+
+---
+
+### Documentos PDF y Flashcards IA (`/api/documents`) - Requiere JWT
+
+| Método | Endpoint                              | Descripción                                              |
+|--------|---------------------------------------|----------------------------------------------------------|
+| POST   | `/api/documents/upload`               | Subir PDF (multipart/form-data) -> 202 Accepted          |
+| GET    | `/api/documents/{id}/status`          | Consultar estado de procesamiento del documento          |
+| GET    | `/api/documents/{id}/markdown`        | Obtener texto extraído del PDF (solo si READY)           |
+| POST   | `/api/documents/{id}/generate-flashcards` | Disparar generación IA -> 202 Accepted con jobId      |
+| GET    | `/api/documents/jobs/{jobId}`         | Consultar estado del job IA (tokens, costo)              |
+| GET    | `/api/documents/{id}/flashcards`      | Obtener las flashcards generadas para el documento       |
+
+**Subir PDF:**
+```
+POST /api/documents/upload
+Authorization: Bearer <jwt>
+Content-Type: multipart/form-data
+
+file=@apuntes.pdf
+```
+
+**Respuesta upload:**
+```json
+{
+  "documentId": 42,
+  "originalFilename": "apuntes.pdf",
+  "status": "PENDING",
+  "duplicate": false
+}
+```
+
+**Estado del documento:**
+```json
+GET /api/documents/42/status
+
+{
+  "documentId": 42,
+  "originalFilename": "apuntes.pdf",
+  "status": "READY",
+  "markdownAvailable": true
+}
+```
+
+**Generar flashcards:**
+```json
+POST /api/documents/42/generate-flashcards
+Authorization: Bearer <jwt>
+
+{
+  "deckId": 7
+}
+```
+
+**Respuesta generación:**
+```json
+{
+  "jobId": 77,
+  "documentId": 42,
+  "deckId": 7,
+  "status": "PENDING",
+  "totalInputTokens": 0,
+  "totalOutputTokens": 0,
+  "estimatedCostUsd": 0.0,
+  "errorMessage": null
+}
+```
+
+**Estado del job (finalizado):**
+```json
+GET /api/documents/jobs/77
+
+{
+  "jobId": 77,
+  "documentId": 42,
+  "deckId": 7,
+  "status": "COMPLETED",
+  "totalInputTokens": 1200,
+  "totalOutputTokens": 480,
+  "estimatedCostUsd": 0.00288,
+  "errorMessage": null
+}
+```
+
+---
+
+### Mazos de Flashcards (`/api/decks`) - Requiere JWT
+
+| Método | Endpoint           | Descripción                                  |
+|--------|--------------------|----------------------------------------------|
+| POST   | `/api/decks`       | Crear mazo (tenant actual)                   |
+| GET    | `/api/decks`       | Listar mazos del tenant actual               |
+| GET    | `/api/decks/{id}`  | Obtener mazo por ID (solo tenant actual)     |
+| PUT    | `/api/decks/{id}`  | Actualizar nombre/descripción del mazo       |
+| DELETE | `/api/decks/{id}`  | Eliminar mazo (solo tenant actual)           |
+
+**Crear mazo:**
+```json
+POST /api/decks
+Authorization: Bearer <jwt>
+
+{
+  "name": "Cálculo I - Derivadas",
+  "description": "Mazo de práctica para el primer parcial"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "id": 7,
+  "institutionId": 1,
+  "name": "Cálculo I - Derivadas",
+  "description": "Mazo de práctica para el primer parcial",
+  "createdAt": "2026-05-23T14:35:00Z"
+}
+```
+
+**Actualizar mazo:**
+```json
+PUT /api/decks/7
+Authorization: Bearer <jwt>
+
+{
+  "name": "Cálculo I - Derivadas e Integrales",
+  "description": "Mazo de práctica para parciales 1 y 2"
+}
+```
+
+---
+
+### Flashcards (`/api/flashcards`) - Requiere JWT
+
+| Método | Endpoint                          | Descripción                              |
+|--------|-----------------------------------|------------------------------------------|
+| POST   | `/api/flashcards`                 | Crear flashcard manualmente              |
+| GET    | `/api/flashcards/deck/{deckId}`   | Listar flashcards de un mazo             |
+| GET    | `/api/flashcards/{id}`            | Obtener flashcard por ID                 |
+| PUT    | `/api/flashcards/{id}`            | Actualizar pregunta/respuesta            |
+| DELETE | `/api/flashcards/{id}`            | Eliminar flashcard                       |
+
+**Crear flashcard:**
+```json
+POST /api/flashcards
+Authorization: Bearer <jwt>
+
+{
+  "deckId": 7,
+  "question": "¿Cuál es la derivada de sin(x)?",
+  "answer": "cos(x)"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "id": 101,
+  "deckId": 7,
+  "question": "¿Cuál es la derivada de sin(x)?",
+  "answer": "cos(x)",
+  "createdAt": "2026-05-23T14:40:00Z"
+}
+```
+
+**Actualizar flashcard:**
+```json
+PUT /api/flashcards/101
+Authorization: Bearer <jwt>
+
+{
+  "question": "¿Cuál es la derivada de sen(x)?",
+  "answer": "cos(x)"
+}
+```
+
 ---
 
 ## 7. Eventos y Asincronía
@@ -243,6 +481,34 @@ Para la gestión del proyecto, las tareas se dividieron en *issues* asignados in
 Se implementó un flujo de Integración Continua (CI) con GitHub Actions. El *workflow* levanta un contenedor de PostgreSQL, compila el proyecto y ejecuta toda la suite de pruebas unitarias y de integración automáticamente en cada Push y Pull Request hacia las ramas principales. Además, se genera un reporte de cobertura automatizado utilizando el plugin JaCoCo.
 
 > [Ver el flujo de trabajo detallado del workflow y variables de CI](docs/ci.md)
+
+### Roles y Permisos (Issue #7)
+
+Roles definidos en `UserRole`: `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN`.
+
+Matriz de autorización aplicada con `@PreAuthorize` granular (controller + método):
+
+| Endpoint                                       | Roles permitidos                                       |
+|------------------------------------------------|--------------------------------------------------------|
+| `POST /api/v1/auth/**`                         | público (register, login, refresh, forgot, reset)      |
+| `POST /api/v1/auth/logout`                     | autenticado                                            |
+| `POST /api/v1/institutions`                    | público (TODO: restringir a `SUPER_ADMIN` con seed)    |
+| `GET  /api/v1/institutions/{id}`               | público                                                |
+| `POST /api/v1/courses`                         | `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN`          |
+| `GET  /api/v1/courses[/{id}]`                  | autenticado                                            |
+| `DELETE /api/v1/courses/{id}`                  | `INSTITUTION_ADMIN`, `SUPER_ADMIN`                     |
+| `POST /api/v1/decks`, `PUT/DELETE /decks/{id}` | `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN` |
+| `GET  /api/v1/decks[/{id}]`                    | autenticado                                            |
+| `POST/PUT/DELETE /api/v1/flashcards/**`        | `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN` |
+| `GET  /api/v1/flashcards/**`                   | autenticado                                            |
+| `POST /api/v1/store/streak-freeze`             | `STUDENT`                                              |
+| `POST /api/v1/store/badges`                    | `STUDENT`                                              |
+| `POST /api/v1/users/me/progress/review`        | `STUDENT`                                              |
+| `GET  /api/v1/users/me/progress`               | autenticado                                            |
+| `POST /api/v1/documents/**`, `GET /api/v1/documents/**` | autenticado                                   |
+| `GET  /api/v1/rewards`                         | autenticado                                            |
+
+Acceso sin la autoridad correcta -> `403 forbidden` (mapeado por `GlobalExceptionHandler` desde `AccessDeniedException`).
 
 ---
 

@@ -25,5 +25,6 @@ public interface UserRepository {
     List<User> findAllInactiveSince(LocalDate thresholdDate, Long institutionId);
 
     List<User> findTopStudentsByXp(Long institutionId, int topN);
+    List<User> findLeaderboardByInstitutionId(Long institutionId);
     User save(User user);
 }
