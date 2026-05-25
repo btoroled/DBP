@@ -47,18 +47,18 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
-    public ResponseEntity<Map<String, Object>> invalidRefreshToken(InvalidRefreshTokenException ex) {
-        return body(HttpStatus.UNAUTHORIZED, "invalid_refresh_token", ex.getMessage());
+    public ResponseEntity<Map<String, Object>> invalidRefreshToken(InvalidRefreshTokenException ex, HttpServletRequest req) {
+        return body(HttpStatus.UNAUTHORIZED, "invalid_refresh_token", ex.getMessage(), req);
     }
 
     @ExceptionHandler(RefreshTokenExpiredException.class)
-    public ResponseEntity<Map<String, Object>> refreshExpired(RefreshTokenExpiredException ex) {
-        return body(HttpStatus.UNAUTHORIZED, "refresh_token_expired", ex.getMessage());
+    public ResponseEntity<Map<String, Object>> refreshExpired(RefreshTokenExpiredException ex, HttpServletRequest req) {
+        return body(HttpStatus.UNAUTHORIZED, "refresh_token_expired", ex.getMessage(), req);
     }
 
     @ExceptionHandler(RefreshTokenRevokedException.class)
-    public ResponseEntity<Map<String, Object>> refreshRevoked(RefreshTokenRevokedException ex) {
-        return body(HttpStatus.UNAUTHORIZED, "refresh_token_revoked", ex.getMessage());
+    public ResponseEntity<Map<String, Object>> refreshRevoked(RefreshTokenRevokedException ex, HttpServletRequest req) {
+        return body(HttpStatus.UNAUTHORIZED, "refresh_token_revoked", ex.getMessage(), req);
     }
 
     @ExceptionHandler(TenantViolationException.class)

@@ -2,7 +2,7 @@ package com.streakstudy.infrastructure.web;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,9 +44,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(Authentication authentication,
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal AuthenticatedUserPrincipal principal,
                                        @Valid @RequestBody RefreshTokenRequest req) {
-        AuthenticatedUserPrincipal principal = (AuthenticatedUserPrincipal) authentication.getPrincipal();
         authService.logout(principal.userId(), req);
         return ResponseEntity.noContent().build();
     }
