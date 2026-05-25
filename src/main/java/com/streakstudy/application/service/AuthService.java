@@ -80,7 +80,7 @@ public class AuthService {
         return issueTokens(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest req) {
         User user = users.findByEmail(req.email().toLowerCase())
             .orElseThrow(InvalidCredentialsException::new);
