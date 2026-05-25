@@ -23,7 +23,9 @@ Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arqu
 - [Ejecución Local](#ejecución-local)
 - [Tests](#tests)
 - [GitHub Actions (CI)](#github-actions-ci)
+- [Deployment](#deployment)
 - [Equipo](#equipo)
+- [Licencia](#licencia)
 
 ---
 
@@ -977,6 +979,38 @@ En cada run (Actions → CI → run específico) aparecen los artifacts al final
 
 ---
 
+## Deployment
+
+> TODO: actualizar URLs cuando se publique el deploy de la entrega.
+
+| Recurso              | URL                                                                                    |
+|----------------------|----------------------------------------------------------------------------------------|
+| API base             | `https://streakstudy.example.com/api/v1`                                               |
+| Health check         | `https://streakstudy.example.com/actuator/health`                                      |
+| Postman Collection   | [`postman_collection.json`](./postman_collection.json) _(pendiente — ver Issue #2)_     |
+| Swagger / OpenAPI    | `https://streakstudy.example.com/swagger-ui.html` _(pendiente — ver Issue #5)_          |
+
+### Variables de entorno mínimas en producción
+
+| Variable            | Notas                                                            |
+|---------------------|------------------------------------------------------------------|
+| `DB_URL`            | `jdbc:postgresql://host:5432/streakstudy_db`                    |
+| `DB_USER`           | Usuario con permisos sobre la base                               |
+| `DB_PASSWORD`       | Secret en el provider (Render/Railway/Fly env var)               |
+| `JWT_SECRET`        | ≥ 256 bits; rotar fuera del repo                                 |
+| `MAIL_ENABLED`      | `true` en prod; `false` deshabilita SMTP y solo loguea           |
+| `ANTHROPIC_API_KEY` | Requerido para generación de flashcards                          |
+| `FRONTEND_URL`      | Origen del frontend para CORS y links de reset password          |
+| `JPA_DDL`           | `validate` en prod (no `update`)                                 |
+
+---
+
 ## Equipo
 
 Proyecto académico desarrollado para el curso **Desarrollo Basado en Plataformas (DBP)** — UTEC, 2026.
+
+---
+
+## Licencia
+
+Código liberado para uso académico bajo los términos del curso. Para uso fuera del contexto académico, contactar al equipo.
