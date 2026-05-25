@@ -59,11 +59,14 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(
-                    "/actuator/health/**",
-                    "/actuator/info",
-                    "/api/health"
-                ).permitAll()
+                    .requestMatchers(
+                            "/actuator/health/**",
+                            "/actuator/info",
+                            "/api/health",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/v3/api-docs/**"
+                    ).permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/institutions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/institutions/**").permitAll()

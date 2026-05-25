@@ -2,6 +2,8 @@ package com.streakstudy.infrastructure.web;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,7 @@ import jakarta.validation.Valid;
  *   <li>{@code DELETE /courses/{id}}: INSTITUTION_ADMIN, SUPER_ADMIN</li>
  * </ul>
  */
+@Tag(name = "Courses", description = "Gestión de cursos")
 @RestController
 @RequestMapping("/api/v1/courses")
 @PreAuthorize("isAuthenticated()")
@@ -38,22 +41,26 @@ public class CourseController {
         this.service = service;
     }
 
+    @Operation(summary = "Crear curso")
     @PostMapping
     @PreAuthorize("hasAnyAuthority('TEACHER','INSTITUTION_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<CourseResponse> create(@Valid @RequestBody CreateCourseRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
 
+    @Operation(summary = "Listar cursos")
     @GetMapping
     public List<CourseResponse> list() {
         return service.listForCurrentTenant();
     }
 
+    @Operation(summary = "Obtener curso por id")
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
         return service.getByIdForCurrentTenant(id);
     }
 
+    @Operation(summary = "Eliminar curso")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('INSTITUTION_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
