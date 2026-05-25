@@ -663,6 +663,34 @@ El resultado: si el tenant A intenta acceder a datos del tenant B, recibe `404` 
 - **API Stateless:** Sin sesiones, CSRF deshabilitado.
 - **Contexto de seguridad:** `AuthenticatedUserPrincipal` almacenado en el `SecurityContext`; no se realizan consultas adicionales a la BD por request.
 
+### Roles y Permisos (Issue #7)
+
+Roles definidos en `UserRole`: `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN`.
+
+Matriz de autorización aplicada con `@PreAuthorize` granular (controller + método):
+
+| Endpoint                                       | Roles permitidos                                       |
+|------------------------------------------------|--------------------------------------------------------|
+| `POST /api/v1/auth/**`                         | público (register, login, refresh, forgot, reset)      |
+| `POST /api/v1/auth/logout`                     | autenticado                                            |
+| `POST /api/v1/institutions`                    | público (TODO: restringir a `SUPER_ADMIN` con seed)    |
+| `GET  /api/v1/institutions/{id}`               | público                                                |
+| `POST /api/v1/courses`                         | `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN`          |
+| `GET  /api/v1/courses[/{id}]`                  | autenticado                                            |
+| `DELETE /api/v1/courses/{id}`                  | `INSTITUTION_ADMIN`, `SUPER_ADMIN`                     |
+| `POST /api/v1/decks`, `PUT/DELETE /decks/{id}` | `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN` |
+| `GET  /api/v1/decks[/{id}]`                    | autenticado                                            |
+| `POST/PUT/DELETE /api/v1/flashcards/**`        | `STUDENT`, `TEACHER`, `INSTITUTION_ADMIN`, `SUPER_ADMIN` |
+| `GET  /api/v1/flashcards/**`                   | autenticado                                            |
+| `POST /api/v1/store/streak-freeze`             | `STUDENT`                                              |
+| `POST /api/v1/store/badges`                    | `STUDENT`                                              |
+| `POST /api/v1/users/me/progress/review`        | `STUDENT`                                              |
+| `GET  /api/v1/users/me/progress`               | autenticado                                            |
+| `POST /api/v1/documents/**`, `GET /api/v1/documents/**` | autenticado                                   |
+| `GET  /api/v1/rewards`                         | autenticado                                            |
+
+Acceso sin la autoridad correcta → `403 forbidden` (mapeado por `GlobalExceptionHandler` desde `AccessDeniedException`).
+
 ---
 
 ## Eventos y Email

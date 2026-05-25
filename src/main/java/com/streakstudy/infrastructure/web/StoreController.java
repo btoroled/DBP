@@ -20,6 +20,7 @@ public class StoreController {
     }
 
     @PostMapping("/streak-freeze")
+    @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<Void> buyStreakFreeze(
             @AuthenticationPrincipal AuthenticatedUserPrincipal principal) {
         storeService.buyStreakFreeze(principal.userId());

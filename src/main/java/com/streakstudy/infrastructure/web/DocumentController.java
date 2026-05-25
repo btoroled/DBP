@@ -14,6 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -51,7 +53,7 @@ public class DocumentController {
     @PostMapping("/{documentId}/generate-flashcards")
     public ResponseEntity<AiGenerationJobResponse> generateFlashcards(
             @PathVariable Long documentId,
-            @RequestBody GenerateFlashcardsRequest request) {
+            @Valid @RequestBody GenerateFlashcardsRequest request) {
         return ResponseEntity.accepted().body(documentService.triggerGeneration(documentId, request.deckId()));
     }
 
