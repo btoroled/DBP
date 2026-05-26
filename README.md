@@ -4,8 +4,6 @@
 
 Plataforma de aprendizaje gamificada con IA, construida con Spring Boot 3 y arquitectura hexagonal. Soporta multitenancy a nivel de institución educativa.
 
-[![CI](https://github.com/btoroled/DBP/actions/workflows/ci.yml/badge.svg)](https://github.com/btoroled/DBP/actions/workflows/ci.yml)
-
 **Curso:** CS 2031 Desarrollo Basado en Plataformas
 **Integrantes:** 
 * Benjamin Toro Leddihn
