@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.streakstudy.application.port.AiFlashcardGeneratorPort;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@ConditionalOnExpression("'${app.ai.anthropic.api-key:}' != ''")
 public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorPort {
 
     public static final String MODEL    = "claude-haiku-4-5-20251001";

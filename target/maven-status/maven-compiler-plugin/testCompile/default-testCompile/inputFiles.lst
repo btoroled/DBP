@@ -16,6 +16,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StoreServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/StreakResetServiceTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/application/service/UserProgressServiceTest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/ai/StubFlashcardGeneratorAdapterTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailIntegrationTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/EmailTemplateRendererTest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/test/java/com/streakstudy/infrastructure/email/JavaMailEmailSenderAdapterTest.java

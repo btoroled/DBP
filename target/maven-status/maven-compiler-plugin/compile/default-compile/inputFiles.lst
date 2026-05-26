@@ -96,7 +96,9 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/domain/repository/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/AnthropicFlashcardGeneratorAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/PdfBoxTextExtractorAdapter.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/ai/StubFlashcardGeneratorAdapter.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/AsyncConfig.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/OpenApiConfig.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/config/package-info.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/EmailProperties.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/email/EmailTemplateRenderer.java
