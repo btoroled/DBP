@@ -19,18 +19,22 @@ RUN --mount=type=cache,target=/root/.m2 \
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 
-# Usuario no-root
-RUN addgroup -S spring && adduser -S spring -G spring
-
 # curl para HEALTHCHECK
 RUN apk add --no-cache curl
+
+# Usuario no-root con su propio grupo (UID fijo 1001, NO en root)
+RUN addgroup -S spring && adduser -S -G spring -u 1001 spring
 
 COPY --from=build --chown=spring:spring /workspace/app.jar /app/app.jar
 
 USER spring
 EXPOSE 8080
 
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
     CMD curl -fsS http://localhost:8080/actuator/health/liveness || exit 1
 
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
+# `exec` hace que la JVM reemplace al shell -> SIGTERM llega a Java
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

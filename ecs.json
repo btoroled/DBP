@@ -1,0 +1,30 @@
+{
+"family": "my-api-task",
+"networkMode": "awsvpc",
+"requiresCompatibilities": ["FARGATE"],
+"cpu": "512",
+"memory": "1024",
+"executionRoleArn": "arn:aws:iam::761461657164:role/LabRole",
+"taskRoleArn": "arn:aws:iam::761461657164:role/LabRole",
+"containerDefinitions": [{
+"name": "my-api",
+"image": "761461657164.dkr.ecr.us-east-1.amazonaws.com/btoroled/streakstudy:latest",
+"essential": true,
+"portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+"environment": [
+{ "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
+{ "name": "DB_URL", "value": "jdbc:postgresql://<rds>:5432/appdb" },
+{ "name": "DB_USER", "value": "appadmin" },
+{ "name": "CORS_ORIGINS", "value": "https://d123.cloudfront.net" }
+],
+"secrets": [
+{ "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:...db_password" },
+{ "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:...jwt_secret" }
+],
+"logConfiguration": {
+"logDriver": "awslogs",
+"options": {
+"awslogs-group": "/ecs/my-api",
+"awslogs-region": "us-east-1",
+"awslogs-stream-prefix": "ecs",
+"awslogs-create-group": "true"}}}]}
