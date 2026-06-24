@@ -87,7 +87,7 @@ public final class User implements TenantAware {
         return new User(
                 this.id(), this.institutionId(), this.email(), this.passwordHash(),
                 this.fullName(), this.role(), this.createdAt(), this.xp(),
-                newStreak, today, 0,Set.of()
+                newStreak, today, this.streakFreezes(), this.badges()
         );
     }
 
