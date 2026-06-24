@@ -21,13 +21,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.streakstudy.domain.exception.BadgeAlreadyOwnedException;
+import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.exception.InsufficientXpException;
 import com.streakstudy.domain.model.Badge;
 import com.streakstudy.domain.model.User;
 import com.streakstudy.domain.model.UserRole;
 import com.streakstudy.domain.repository.UserRepository;
-
-import jakarta.persistence.EntityNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {

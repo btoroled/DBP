@@ -7,7 +7,7 @@ import com.streakstudy.domain.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import jakarta.persistence.EntityNotFoundException;
+import com.streakstudy.domain.exception.EntityNotFoundException;
 
 @Service
 public class StoreService {
