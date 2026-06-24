@@ -6,6 +6,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/CreateCourseRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/CreateDeckRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/CreateFlashcardRequest.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/CurrentUserResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/DeckResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/DocumentStatusResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/DocumentUploadResponse.java
@@ -16,6 +17,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/GenerateFlashcardsRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/InstitutionRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/InstitutionResponse.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/InstitutionSummaryResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/LeaderboardUserResponse.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/LoginRequest.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/application/dto/RefreshTokenRequest.java
@@ -164,6 +166,7 @@
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/FlashcardController.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/HealthController.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/InstitutionController.java
+/Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/LeaderboardController.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/RewardItemController.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/StoreController.java
 /Users/btoro/Documents/UTEC/DBP/DBP/src/main/java/com/streakstudy/infrastructure/web/TestStreakController.java
