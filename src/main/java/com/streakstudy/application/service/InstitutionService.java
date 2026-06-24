@@ -1,9 +1,12 @@
 package com.streakstudy.application.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.streakstudy.application.dto.InstitutionRequest;
 import com.streakstudy.application.dto.InstitutionResponse;
+import com.streakstudy.application.dto.InstitutionSummaryResponse;
 import com.streakstudy.domain.exception.DomainException;
 import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.model.Institution;
@@ -32,6 +35,12 @@ public class InstitutionService {
         }
         Institution saved = institutions.save(Institution.newInstance(req.name(), code));
         return InstitutionResponse.from(saved);
+    }
+
+    public List<InstitutionSummaryResponse> listActive() {
+        return institutions.findAllActive().stream()
+            .map(InstitutionSummaryResponse::from)
+            .toList();
     }
 
     public InstitutionResponse getById(Long id) {

@@ -1,5 +1,6 @@
 package com.streakstudy.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -42,5 +43,14 @@ public class InstitutionRepositoryAdapter implements InstitutionRepository {
     @Override
     public boolean existsByCode(String code) {
         return jpa.existsByCode(code);
+    }
+
+    @Override
+    public List<Institution> findAllActive() {
+        return TenantContext.runCrossTenant(() ->
+            jpa.findByActiveTrueOrderByNameAsc().stream()
+                .map(InstitutionMapper::toDomain)
+                .toList()
+        );
     }
 }

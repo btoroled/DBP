@@ -1,5 +1,6 @@
 package com.streakstudy.domain.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.streakstudy.domain.model.Institution;
@@ -18,4 +19,6 @@ public interface InstitutionRepository {
     Optional<Institution> findByCode(String code);
 
     boolean existsByCode(String code);
+
+    List<Institution> findAllActive();
 }

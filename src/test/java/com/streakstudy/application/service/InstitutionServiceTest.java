@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.streakstudy.application.dto.InstitutionRequest;
 import com.streakstudy.application.dto.InstitutionResponse;
+import com.streakstudy.application.dto.InstitutionSummaryResponse;
 import com.streakstudy.application.service.InstitutionService.InstitutionCodeAlreadyExistsException;
 import com.streakstudy.domain.exception.EntityNotFoundException;
 import com.streakstudy.domain.model.Institution;
@@ -80,5 +82,19 @@ class InstitutionServiceTest {
         InstitutionResponse resp = service.getById(7L);
         assertThat(resp.id()).isEqualTo(7L);
         assertThat(resp.code()).isEqualTo("pucp");
+    }
+
+    @Test
+    void shouldReturnOnlyIdAndNameWhenListingActiveInstitutions() {
+        when(institutions.findAllActive()).thenReturn(List.of(
+            new Institution(1L, "PUCP", "pucp", true, Instant.now()),
+            new Institution(2L, "UTEC", "utec", true, Instant.now())
+        ));
+
+        List<InstitutionSummaryResponse> result = service.listActive();
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(InstitutionSummaryResponse::id).containsExactly(1L, 2L);
+        assertThat(result).extracting(InstitutionSummaryResponse::name).containsExactly("PUCP", "UTEC");
     }
 }

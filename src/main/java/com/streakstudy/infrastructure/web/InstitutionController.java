@@ -1,5 +1,7 @@
 package com.streakstudy.infrastructure.web;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.streakstudy.application.dto.InstitutionRequest;
 import com.streakstudy.application.dto.InstitutionResponse;
+import com.streakstudy.application.dto.InstitutionSummaryResponse;
 import com.streakstudy.application.service.InstitutionService;
 
 import jakarta.validation.Valid;
@@ -28,6 +31,11 @@ public class InstitutionController {
     @PostMapping
     public ResponseEntity<InstitutionResponse> create(@Valid @RequestBody InstitutionRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
+    }
+
+    @GetMapping
+    public List<InstitutionSummaryResponse> list() {
+        return service.listActive();
     }
 
     @GetMapping("/{id}")
