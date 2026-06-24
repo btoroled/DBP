@@ -25,6 +25,8 @@ import java.util.List;
 @Service
 public class DocumentProcessingService implements DocumentProcessingPort {
 
+    private static final int MIN_CHUNK_CHARS = 300;
+
     private final DocumentRepository      documentRepository;
     private final AiGenerationJobRepository jobRepository;
     private final FlashcardRepository     flashcardRepository;
@@ -80,6 +82,7 @@ public class DocumentProcessingService implements DocumentProcessingPort {
             int totalInput = 0, totalOutput = 0;
             int totalFlashcards = 0;
             for (String chunk : chunks) {
+                if (chunk.length() < MIN_CHUNK_CHARS) continue;
                 GenerationResult result = aiGenerator.generate(chunk);
                 totalInput  += result.inputTokens();
                 totalOutput += result.outputTokens();

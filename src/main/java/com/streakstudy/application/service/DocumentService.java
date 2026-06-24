@@ -27,7 +27,7 @@ import java.util.List;
 @Service
 public class DocumentService {
 
-    public static final int CHUNK_SIZE = 2000;
+    public static final int CHUNK_SIZE = 4500;
 
     private static final int MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 

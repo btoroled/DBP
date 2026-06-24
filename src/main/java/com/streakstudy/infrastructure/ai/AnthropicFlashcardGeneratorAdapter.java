@@ -41,10 +41,15 @@ public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorP
 
     @Override
     public GenerationResult generate(String textChunk) {
+        Map<String, Object> systemBlock = Map.of(
+                "type", "text",
+                "text", SYSTEM_PROMPT,
+                "cache_control", Map.of("type", "ephemeral")
+        );
         Map<String, Object> body = Map.of(
                 "model", MODEL,
                 "max_tokens", 1024,
-                "system", SYSTEM_PROMPT,
+                "system", List.of(systemBlock),
                 "messages", List.of(Map.of("role", "user", "content", textChunk))
         );
 
@@ -67,8 +72,11 @@ public class AnthropicFlashcardGeneratorAdapter implements AiFlashcardGeneratorP
             content = content.replaceAll("(?s)```json\\s*|```", "").strip();
             List<FlashcardSuggestion> flashcards = objectMapper.readValue(content, new TypeReference<>() {});
 
-            int inputTokens  = root.path("usage").path("input_tokens").asInt(0);
-            int outputTokens = root.path("usage").path("output_tokens").asInt(0);
+            JsonNode usage = root.path("usage");
+            int inputTokens  = usage.path("input_tokens").asInt(0)
+                    + usage.path("cache_creation_input_tokens").asInt(0)
+                    + usage.path("cache_read_input_tokens").asInt(0);
+            int outputTokens = usage.path("output_tokens").asInt(0);
 
             return new GenerationResult(flashcards, inputTokens, outputTokens);
         } catch (Exception e) {
