@@ -23,8 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.streakstudy.application.dto.AuthResponse;
+import com.streakstudy.application.dto.CurrentUserResponse;
 import com.streakstudy.application.dto.LoginRequest;
 import com.streakstudy.application.dto.RegisterRequest;
+import com.streakstudy.domain.model.Badge;
 import com.streakstudy.application.port.PasswordHasher;
 import com.streakstudy.application.port.TokenIssuer;
 import com.streakstudy.domain.exception.EmailAlreadyExistsException;
@@ -140,5 +142,31 @@ class AuthServiceTest {
         assertThatThrownBy(() -> service.login(new LoginRequest("alice@utec.edu", "wrong")))
             .isInstanceOf(InvalidCredentialsException.class);
         verify(tokens, never()).issue(any());
+    }
+
+    @Test
+    void shouldReturnCurrentUserDataWhenGettingMe() {
+        User existing = new User(10L, 1L, "alice@utec.edu", "HASHED", "Alice",
+            UserRole.STUDENT, Instant.now(), 42, 7, LocalDate.now(), 2, Set.of(Badge.STREAK_STARTER));
+        when(users.findById(10L)).thenReturn(Optional.of(existing));
+
+        CurrentUserResponse resp = service.getCurrentUser(10L);
+
+        assertThat(resp.userId()).isEqualTo(10L);
+        assertThat(resp.institutionId()).isEqualTo(1L);
+        assertThat(resp.email()).isEqualTo("alice@utec.edu");
+        assertThat(resp.role()).isEqualTo("STUDENT");
+        assertThat(resp.xp()).isEqualTo(42);
+        assertThat(resp.currentStreak()).isEqualTo(7);
+        assertThat(resp.streakFreezes()).isEqualTo(2);
+        assertThat(resp.badges()).containsExactly("STREAK_STARTER");
+    }
+
+    @Test
+    void shouldThrowWhenCurrentUserNotFound() {
+        when(users.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getCurrentUser(99L))
+            .isInstanceOf(EntityNotFoundException.class);
     }
 }

@@ -5,12 +5,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.streakstudy.application.dto.AuthResponse;
+import com.streakstudy.application.dto.CurrentUserResponse;
 import com.streakstudy.application.dto.ForgotPasswordRequest;
 import com.streakstudy.application.dto.LoginRequest;
 import com.streakstudy.application.dto.RefreshTokenRequest;
@@ -65,6 +67,12 @@ public class AuthController {
                                        @Valid @RequestBody RefreshTokenRequest req) {
         authService.logout(principal.userId(), req);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Obtener usuario autenticado")
+    @GetMapping("/me")
+    public CurrentUserResponse me(@AuthenticationPrincipal AuthenticatedUserPrincipal principal) {
+        return authService.getCurrentUser(principal.userId());
     }
 
     /**

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.streakstudy.application.dto.AuthResponse;
+import com.streakstudy.application.dto.CurrentUserResponse;
 import com.streakstudy.application.dto.LoginRequest;
 import com.streakstudy.application.dto.RefreshTokenRequest;
 import com.streakstudy.application.dto.RegisterRequest;
@@ -101,6 +102,12 @@ public class AuthService {
             tokenIssuer.expirationSeconds(),
             rotation.user()
         );
+    }
+
+    public CurrentUserResponse getCurrentUser(Long userId) {
+        User user = users.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException("User", userId));
+        return CurrentUserResponse.from(user);
     }
 
     @Transactional

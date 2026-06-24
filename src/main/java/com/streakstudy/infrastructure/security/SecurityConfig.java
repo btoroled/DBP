@@ -68,6 +68,7 @@ public class SecurityConfig {
                             "/webjars/**",
                             "/v3/api-docs/**"
                     ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").authenticated()
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/institutions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/institutions/**").permitAll()
